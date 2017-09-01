@@ -25,40 +25,19 @@ var lobbyScreen;
 var createGameScreen;
 var joinGameScreen;
 var gameWaitScreen;
-var currentScreen = "lobby";
+var currentScreen;
 
 function init(){
     lobbyScreen = document.getElementById('LobbyScreen');
     createGameScreen = document.getElementById('CreateGameScreen');
     joinGameScreen = document.getElementById('JoinGameScreen');
     gameWaitScreen = document.getElementById('GameWaitScreen');
+    currentScreen = lobbyScreen;
 }
 
 function changeScreen(newScreen){
-    if(currentScreen == "lobby"){
-        lobbyScreen.style.display = "none";
-    }
-    else if(currentScreen == "createGame"){
-        createGameScreen.style.display = "none";
-    }
-    else if(currentScreen == "joinGame"){
-        joinGameScreen.style.display = "none";
-    }
-    else if(currentScreen == "gameWait"){
-        gameWaitScreen.style.display = "none";
-    }
-    if(newScreen == "lobby"){
-        lobbyScreen.style.display = "block";
-    }
-    else if(newScreen == "createGame"){
-        createGameScreen.style.display = "block";
-    }
-    else if(newScreen == "joinGame"){
-        joinGameScreen.style.display = "block";
-    }
-    else if(newScreen == "gameWait"){
-        gameWaitScreen.style.display = "block";
-    }
+    currentScreen.style.display = "none";
+    newScreen.style.display = "block";
     currentScreen = newScreen;
 }
 
@@ -67,14 +46,14 @@ function changeScreen(newScreen){
     <center>
     <h1>Schooled</h1>
     <div id="LobbyScreen">
-        <button type="button" onclick="changeScreen('createGame')">New Game</button>
-        <button type="button" onclick="changeScreen('joinGame')">Join Game</button>
+        <button type="button" onclick="changeScreen(createGameScreen)">New Game</button>
+        <button type="button" onclick="changeScreen(joinGameScreen)">Join Game</button>
     </div>
     <div id="CreateGameScreen">
         <span>Please enter a name!</span><br>
         <input type="text" placeholder="Enter your name"><br>
-        <button type="button" onclick="changeScreen('gameWait')">Create Game</button>
-        <button type="button" onclick="changeScreen('lobby')">Back</button>
+        <button type="button" onclick="changeScreen(gameWaitScreen)">Create Game</button>
+        <button type="button" onclick="changeScreen(lobbyScreen)">Back</button>
     </div>
     <div id="JoinGameScreen">
         <span>Please enter a name!</span><br>
@@ -82,8 +61,8 @@ function changeScreen(newScreen){
         <span>That room is full!</span><br>
         <input type="text" placeholder="Enter a game code"><br>
         <input type="text" placeholder="Enter your name"><br>
-        <button type="button" onclick="changeScreen('gameWait')">Join Game</button>
-        <button type="button" onclick="changeScreen('lobby')">Back</button>
+        <button type="button" onclick="changeScreen(gameWaitScreen)">Join Game</button>
+        <button type="button" onclick="changeScreen(lobbyScreen)">Back</button>
     </div>
     <div id="GameWaitScreen">
         <h2>Game Code: HWOCRD</h2>
@@ -95,7 +74,7 @@ function changeScreen(newScreen){
             <tr><td>Player 4</td></tr>
         </table>
         <button type="button" onclick="alert('Started Game!')">Start Game</button>
-        <button type="button" onclick="changeScreen('lobby')">Back</button>
+        <button type="button" onclick="changeScreen(lobbyScreen)">Back</button>
     </div>
     </center>
 </body>
