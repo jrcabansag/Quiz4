@@ -7,7 +7,7 @@
     td{
         border: 1px solid black;
     }
-    #LobbyScreen{
+    #WelcomeScreen{
         display: block;
     }
     #CreateGameScreen{
@@ -16,23 +16,41 @@
     #JoinGameScreen{
         display: none;
     }
-    #GameWaitScreen{
+    #LobbyScreen{
         display: none;
     }
 </style>
+<script src="/socket.io/socket.io.js"></script>
 <script>
-var lobbyScreen;
+var welcomeScreen;
 var createGameScreen;
 var joinGameScreen;
-var gameWaitScreen;
+var lobbyScreen;
 var currentScreen;
+var socket;
 
 function init(){
-    lobbyScreen = document.getElementById('LobbyScreen');
+    welcomeScreen = document.getElementById('WelcomeScreen');
     createGameScreen = document.getElementById('CreateGameScreen');
     joinGameScreen = document.getElementById('JoinGameScreen');
-    gameWaitScreen = document.getElementById('GameWaitScreen');
-    currentScreen = lobbyScreen;
+    lobbyScreen = document.getElementById('LobbyScreen');
+    currentScreen = welcomeScreen;
+    initSocket();
+}
+
+function initSocket(){
+    socket = io();
+    socket.on('joinLobby', function(lobby){
+        enterLobbyScreen(lobby);
+    });
+    
+    socket.on('updateLobby', function(lobby){
+        updateLobby(lobby);
+    });
+    
+    socket.on('errorMessage', function(message){
+        alert("Error: "+message);
+    });
 }
 
 function changeScreen(newScreen){
@@ -41,40 +59,83 @@ function changeScreen(newScreen){
     currentScreen = newScreen;
 }
 
+function newGameRequest(){
+    var nameBox = document.getElementById('NameBox');
+    var name = nameBox.value;
+    if(name.length == 0){
+        alert("Please enter a name!")
+    }
+    else{
+        socket.emit('newGameRequest', name);
+    }
+}
+
+function joinGameRequest(){
+    var nameBox = document.getElementById('NameBoxJoin');
+    var name = nameBox.value;
+    if(name.length == 0){
+        alert("Please enter a name!")
+    }
+    else{
+        var gameCodeBox = document.getElementById('GameCodeBox');
+        var gameCode = gameCodeBox.value;
+        if(gameCode.length != 6){
+            alert("Please enter a valid six letter game code!")
+        }
+        else{
+            socket.emit('joinGameRequest', {gameCode: gameCode.toUpperCase(), name: name});
+        }
+    }
+}
+
+function enterLobbyScreen(lobby){
+    changeScreen(lobbyScreen);
+    updateLobby(lobby);
+}
+
+function updateLobby(lobby){
+    var gameCodeLabel = document.getElementById("GameCodeLabel");
+    gameCodeLabel.innerHTML = "Game Code: "+lobby.gameCode;
+    for(var playerIndex = 0; playerIndex < 4; playerIndex++){
+        var playerLabel = document.getElementById("Player"+playerIndex+"Label");
+        if(playerIndex < lobby.players.length){
+            playerLabel.innerHTML = lobby.players[playerIndex];
+        }
+        else{
+            playerLabel.innerHTML = "&nbsp;";
+        }
+    }
+}
+
 </script>
 <body onload="init()">
     <center>
     <h1>Schooled</h1>
-    <div id="LobbyScreen">
+    <div id="WelcomeScreen">
         <button type="button" onclick="changeScreen(createGameScreen)">New Game</button>
         <button type="button" onclick="changeScreen(joinGameScreen)">Join Game</button>
     </div>
     <div id="CreateGameScreen">
-        <span>Please enter a name!</span><br>
-        <input type="text" placeholder="Enter your name"><br>
-        <button type="button" onclick="changeScreen(gameWaitScreen)">Create Game</button>
-        <button type="button" onclick="changeScreen(lobbyScreen)">Back</button>
+        <input type="text" id="NameBox" placeholder="Enter your name"><br>
+        <button type="button" onclick="newGameRequest()">Create Game</button>
+        <button type="button" onclick="changeScreen(welcomeScreen)">Back</button>
     </div>
     <div id="JoinGameScreen">
-        <span>Please enter a name!</span><br>
-        <span>That is not a valid game code!</span><br>
-        <span>That room is full!</span><br>
-        <input type="text" placeholder="Enter a game code"><br>
-        <input type="text" placeholder="Enter your name"><br>
-        <button type="button" onclick="changeScreen(gameWaitScreen)">Join Game</button>
-        <button type="button" onclick="changeScreen(lobbyScreen)">Back</button>
+        <input type="text" id="GameCodeBox" placeholder="Enter a game code"><br>
+        <input type="text" id="NameBoxJoin" placeholder="Enter your name"><br>
+        <button type="button" onclick="joinGameRequest()">Join Game</button>
+        <button type="button" onclick="changeScreen(welcomeScreen)">Back</button>
     </div>
-    <div id="GameWaitScreen">
-        <h2>Game Code: HWOCRD</h2>
-        <span>Please wait till there is at least 2 players!</span><br>
+    <div id="LobbyScreen">
+        <h2 id="GameCodeLabel">Game Code:</h2>
         <table>
-            <tr><td>Player 1</td></tr>
-            <tr><td>Player 2</td></tr>
-            <tr><td>Player 3</td></tr>
-            <tr><td>Player 4</td></tr>
+            <tr><td id="Player0Label">&nbsp;</td></tr>
+            <tr><td id="Player1Label">&nbsp;</td></tr>
+            <tr><td id="Player2Label">&nbsp;</td></tr>
+            <tr><td id="Player3Label">&nbsp;</td></tr>
         </table>
         <button type="button" onclick="alert('Started Game!')">Start Game</button>
-        <button type="button" onclick="changeScreen(lobbyScreen)">Back</button>
+        <button type="button" onclick="changeScreen(welcomeScreen)">Back</button>
     </div>
     </center>
 </body>

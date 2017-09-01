@@ -1,0 +1,9 @@
+{
+  "name": "Schooled",
+  "version": "0.0.1",
+  "description": "Answer questions correctly and get four in a row before your opponent!",
+  "dependencies": {
+    "express": "^4.15.4",
+    "socket.io": "^2.0.3"
+  }
+}
