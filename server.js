@@ -13,58 +13,76 @@ function generateGameCode(){
     return gameCode;
 }
 
-function createLobby(gameCode, player0Socket, player0Name){
-    var lobby = {
-        gameCode: gameCode,
-        players: [player0Name]
-    }
-    return lobby;
+function createLobby(gameCode){
+    lobbyDictionary[gameCode] = {gameCode: gameCode, players: []};
 }
 
-function removePlayerFromLobby(playerSocket, lobby){
-    
+function addPlayerToLobby(playerSocket, playerName, gameCode){
+    var lobby = lobbyDictionary[gameCode];
+    while(lobby.players.indexOf(playerName) != -1){
+        playerName+="2";
+    }
+    lobby.players.push(playerName);
+    lobbyDictionary[gameCode] = lobby;
+    playerSocket.join(gameCode);
+    playerSocket.emit('joinLobby', lobby);
+    playersInLobbyDictionary[playerSocket.id] = gameCode;
+    playersNameDictionary[playerSocket.id] = playerName;
+    io.in(gameCode).emit('updateLobby', lobby);
+}
+
+function removePlayerFromLobby(playerSocket){
+    var playerSocketId = playerSocket.id;
+    if(playerSocketId in playersInLobbyDictionary){
+        var gameCode = playersInLobbyDictionary[playerSocketId];
+        var name = playersNameDictionary[playerSocketId];
+        playerSocket.leave(gameCode);
+        delete playersInLobbyDictionary[playerSocketId];
+        delete playersNameDictionary[playerSocketId];
+        var lobby = lobbyDictionary[gameCode];
+        lobby.players.splice(lobby.players.indexOf(name), 1);
+        if(lobby.players.length > 0){
+            lobbyDictionary[gameCode] = lobby;
+            io.in(gameCode).emit('updateLobby', lobby);
+        }
+        else{
+            delete lobbyDictionary[gameCode];
+        }
+    }
 }
 
 app.get('/', function(req, res){
-  res.sendFile(__dirname + '/index.html');
+    res.sendFile(__dirname + '/index.html');
 });
 
 io.on('connection', function(socket){
-  socket.on('newGameRequest', function(name){
-    var gameCode = generateGameCode();
-    socket.join(gameCode);
-    var lobby = createLobby(gameCode, socket, name);
-    socket.emit('joinLobby', lobby);
-    lobbyDictionary[gameCode] = lobby;
-    playersInLobbyDictionary[socket.id] = gameCode;
-    playersNameDictionary[socket.id] = name;
-  });
+    socket.on('newGameRequest', function(name){
+        var gameCode = generateGameCode();
+        createLobby(gameCode);
+        addPlayerToLobby(socket, name, gameCode);
+    });
   
-  socket.on('joinGameRequest', function(joinRequest){
-    if(joinRequest.gameCode in lobbyDictionary){
-        lobbyDictionary[joinRequest.gameCode].players.push(joinRequest.name);
-        socket.emit('joinLobby', lobbyDictionary[joinRequest.gameCode]);
-        socket.join(joinRequest.gameCode);
-        io.in(joinRequest.gameCode).emit('updateLobby', lobbyDictionary[joinRequest.gameCode]);
-        playersInLobbyDictionary[socket.id] = joinRequest.gameCode;
-        playersNameDictionary[socket.id] = joinRequest.name;
+    socket.on('joinGameRequest', function(gameCode, name){
+    if(gameCode in lobbyDictionary){
+        if(lobbyDictionary[gameCode].players.length < 4){
+            addPlayerToLobby(socket, name, gameCode);
+        }
+        else{
+            socket.emit('errorMessage', "That room is full!");
+        }
     }
     else{
         socket.emit('errorMessage', "That is not a valid game key!");
     }
-  });
+    });
 
-  socket.on('disconnect', function(){
-    if(socket.id in playersInLobbyDictionary){
-        var gameCode = playersInLobbyDictionary[socket.id];
-        var name = playersNameDictionary[socket.id];
-        var lobby = lobbyDictionary[gameCode];
-        var playerIndex = lobby.players.indexOf(name);
-        lobby.players.splice(playerIndex, 1);
-        lobbyDictionary[gameCode] = lobby;
-        io.in(gameCode).emit('updateLobby', lobby);
-    }
-  });
+    socket.on('leaveLobby', function(){
+        removePlayerFromLobby(socket);
+    });
+    
+    socket.on('disconnect', function(){
+        removePlayerFromLobby(socket);
+    });
 });
 
 var port = process.env.PORT || 3000;

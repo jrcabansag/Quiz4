@@ -19,6 +19,10 @@
     #LobbyScreen{
         display: none;
     }
+    td{
+        text-align: center;
+        min-width: 150px;
+    }
 </style>
 <script src="/socket.io/socket.io.js"></script>
 <script>
@@ -83,7 +87,7 @@ function joinGameRequest(){
             alert("Please enter a valid six letter game code!")
         }
         else{
-            socket.emit('joinGameRequest', {gameCode: gameCode.toUpperCase(), name: name});
+            socket.emit('joinGameRequest', gameCode.toUpperCase(), name);
         }
     }
 }
@@ -105,6 +109,11 @@ function updateLobby(lobby){
             playerLabel.innerHTML = "&nbsp;";
         }
     }
+}
+
+function leaveLobby(){
+    socket.emit('leaveLobby');
+    changeScreen(welcomeScreen);
 }
 
 </script>
@@ -135,7 +144,7 @@ function updateLobby(lobby){
             <tr><td id="Player3Label">&nbsp;</td></tr>
         </table>
         <button type="button" onclick="alert('Started Game!')">Start Game</button>
-        <button type="button" onclick="changeScreen(welcomeScreen)">Back</button>
+        <button type="button" onclick="leaveLobby()">Back</button>
     </div>
     </center>
 </body>
