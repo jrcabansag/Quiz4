@@ -80,6 +80,10 @@ var lobbyScreen;
 var gameScreen;
 var currentScreen;
 var gameSlotMatrix = new Array(7);
+var gameHeader;
+var gameTimer;
+var answerBox;
+var gameIteration = -1;
 var coinMatrix = new Array(7);
 var coinStatus = 1;
 
@@ -126,6 +130,14 @@ function initSocket(){
     
     socket.on('updateGame', function(game){
        updateGame(game);
+    });
+    
+    socket.on('updateGameText', function(game){
+       updateGameText(game);
+    });
+    
+    socket.on('changeTimer', function(time, iteration){
+        updateTimer(time, iteration);
     });
 }
 
@@ -220,6 +232,9 @@ function startGameRequest(){
 }
 
 function enterGameScreen(game){
+    gameHeader = document.getElementById("GameHeader");
+    gameTimer = document.getElementById("GameTimer");
+    answerBox = document.getElementById("AnswerBox");
     changeScreen(gameScreen);
     updateGame(game);
 }
@@ -244,6 +259,28 @@ function updateGame(game){
             var playerInfoBox = document.getElementById("GamePlayer"+playerIndex+"InfoBox");
             playerInfoBox.style.display = "none";
         }
+    }
+}
+
+function updateGameText(game){
+    if(game.status == "WelcomeCountdown"){
+        gameHeader.innerHTML = "Welcome! The first question will pop up soon.";
+    }
+    if(game.status != "Question"){
+        answerBox.style.display = "none";
+    }
+}
+
+function updateTimer(time, iteration){
+    if(iteration >= gameIteration && time >= 0){
+        gameIteration = iteration;
+        if(time < 10){
+            gameTimer.innerHTML = "0:0"+time;
+        }
+        else{
+            gameTimer.innerHTML = "0:"+time;
+        }
+        setTimeout(function(){updateTimer(time-1, iteration);}, 1000);
     }
 }
 
@@ -402,8 +439,9 @@ function highlightNeighbors(x, y, dX, dY, neighborCount){
     <div id="GameScreen">
         <div id="GameInfoScreen">
             <div id="GameTextScreen">
-                <h1>Welcome!</h1><br>
-                <input type="text" id="GameCodeBox" placeholder="Enter your answer">
+                <h1 id="GameHeader">Welcome!</h1><br>
+                <h2 id="GameTimer">0:00</h2>
+                <input type="text" id="AnswerBox" placeholder="Enter your answer">
             </div>
             <table id="GameScoreboard">
             <tr id="GamePlayer0InfoBox"><td id="GamePlayer0NameBox" class="GamePlayerNameBox">Player 0</td><td id="GamePlayer0ScoreBox" class="GamePlayerScoreBox">0</td><tr>

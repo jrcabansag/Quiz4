@@ -61,7 +61,14 @@ function createGame(gameCode){
     if(gameCode in lobbyDictionary){
         var lobby = lobbyDictionary[gameCode];
         delete lobbyDictionary[gameCode];
-        gameDictionary[gameCode] = {gameCode: gameCode, players: lobby.players, playerCount: lobby.players.length, teams: lobby.teams, scores: new Array(lobby.players.length).fill(0), statuses: new Array(lobby.players.length)};
+        var board = new Array(7);
+        for(var x = 0; x < board.length; x++){
+            board[x] = new Array(6);
+            for(var y = 0; y < 6; y++){
+                board[x][y] = "";
+            }
+        }
+        gameDictionary[gameCode] = {gameCode: gameCode, players: lobby.players, playerCount: lobby.players.length, teams: lobby.teams, scores: new Array(lobby.players.length).fill(0), statuses: new Array(lobby.players.length), status: "WelcomeCountdown", iteration: 0, board: board};
     }
     return gameDictionary[gameCode];
 }
@@ -148,6 +155,8 @@ io.on('connection', function(socket){
                     if(canStartGame){
                         var game = createGame(gameCode);
                         io.in(gameCode).emit('joinGame', game);
+                        io.in(gameCode).emit('updateGameText', game);
+                        io.in(gameCode).emit('changeTimer', 15, game.iteration);
                     }
                     else{
                         socket.emit('errorMessage', "Not everyone has selected a team!");
