@@ -19,6 +19,36 @@
     #GameScreen{
         display: block;
     }
+    #GameInfoScreen{
+        display:inline-block;
+        vertical-align: top;
+        width:394px;
+    }
+    #GameBoardScreen{
+        display:inline-block;
+        vertical-align: top;
+        border: 1px solid black;
+        background-color: yellow;
+    }
+    #GameTextScreen{
+        height: 230px;
+        border: 1px solid black;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    #Scoreboard{
+        width: 100%;
+    }
+    .gamePlayerNameBox{
+        font-weight: bold;
+        width: calc(100%-50px);
+    }
+    .gamePlayerScoreBox{
+        width: 50px;
+        min-width: 50px;
+    }
     td{
         border: 1px solid black;
         text-align: center;
@@ -28,6 +58,7 @@
         min-width: 50px;
         height: 50px;
         border-radius: 50px;
+        background-color: white;
     }
 </style>
 <script src="/socket.io/socket.io.js"></script>
@@ -42,6 +73,7 @@ var currentScreen;
 var gameSlotMatrix = new Array(7);
 var coinMatrix = new Array(7);
 var currentHoverColumn = -1;
+var coinStatus = 1;
 
 function init(){
     welcomeScreen = document.getElementById('WelcomeScreen');
@@ -52,6 +84,17 @@ function init(){
     currentScreen = welcomeScreen;
     initSocket();
     initGameSlots();
+    window.onkeyup = function(e) {
+        var key = e.keyCode ? e.keyCode : e.which;
+        if(key == 32){
+            if(coinStatus == 1){
+                coinStatus = 2;
+            }
+            else{
+                coinStatus = 1;
+            }
+        }
+    }
 }
 
 function initSocket(){
@@ -140,13 +183,6 @@ function leaveLobby(){
 }
 
 function hoverSlot(x, y){
-    //for(var rowIndex = 0; rowIndex < 6; rowIndex++){
-    //    gameSlotMatrix[x][rowIndex].style.backgroundColor = "red";
-    //    if(currentHoverColumn != -1){
-    //        gameSlotMatrix[currentHoverColumn][rowIndex].style.backgroundColor = "white";
-    //    }
-    //}
-    //currentHoverColumn = x;
 }
 
 function clickSlot(x, y){
@@ -155,22 +191,66 @@ function clickSlot(x, y){
 
 function placeCoin(x, y){
     if(coinMatrix[x][5] == -1){
-        coinMatrix[x][5] = 1;
-        gameSlotMatrix[x][5].style.backgroundColor = "red";
+        coinMatrix[x][5] = coinStatus;
+        if(coinStatus == 1){
+            gameSlotMatrix[x][5].style.backgroundColor = "red";
+        }
+        else{
+            gameSlotMatrix[x][5].style.backgroundColor = "black";
+        }
         setTimeout(function(){ coinFall(x, 5); }, 50);
     }
 }
 
 function coinFall(x, y){
     if(y == 0 || coinMatrix[x][y-1] != -1){
+        checkWinner(x, y);
     }
     else{
+        gameSlotMatrix[x][y-1].style.backgroundColor = gameSlotMatrix[x][y].style.backgroundColor;
         gameSlotMatrix[x][y].style.backgroundColor = "white";
+        coinMatrix[x][y-1] = coinMatrix[x][y];
         coinMatrix[x][y] = -1;
-        coinMatrix[x][y-1] = 1;
-        gameSlotMatrix[x][y-1].style.backgroundColor = "red";
         setTimeout(function(){ coinFall(x, y-1); }, 50);
         
+    }
+}
+
+function checkWinner(x, y){
+    var directionsArray = [{dX: 1, dY: 0}, {dX: 0, dY: 1}, {dX: 1, dY: -1}, {dX: 1, dY: 1}];
+    for(var directionIndex = 0; directionIndex < directionsArray.length; directionIndex++){
+        var currentDirection = directionsArray[directionIndex];
+        var directionNeighborCount = countSameNeighbors(x, y, currentDirection.dX, currentDirection.dY);
+        var compDirectionNeighborCount = countSameNeighbors(x, y, -currentDirection.dX, -currentDirection.dY);
+        if(directionNeighborCount + compDirectionNeighborCount >= 3){
+            gameSlotMatrix[x][y].style.backgroundColor = "yellow";
+            highlightNeighbors(x, y, currentDirection.dX, currentDirection.dY, directionNeighborCount);
+            highlightNeighbors(x, y, -currentDirection.dX, -currentDirection.dY, compDirectionNeighborCount);
+        }
+    }
+}
+
+function countSameNeighbors(x, y, dX, dY){
+    var coinValue = coinMatrix[x][y];
+    var neighborCount = 0;
+    var neighborX = x+dX;
+    var neighborY = y+dY;
+    while(neighborX >= 0 && neighborY >= 0 && neighborX < 7 && neighborY < 6 && coinMatrix[neighborX][neighborY] == coinValue){
+        neighborCount += 1;
+        neighborX += dX;
+        neighborY += dY;
+    }
+    return neighborCount;
+}
+
+function highlightNeighbors(x, y, dX, dY, neighborCount){
+    var neighborX = x+dX;
+    var neighborY = y+dY;
+    while(neighborX >= 0 && neighborY >= 0 && neighborX < 7 && neighborY < 6 && neighborCount > 0){
+        gameSlotMatrix[neighborX][neighborY].style.backgroundColor = "yellow";
+        neighborCount -= 1;
+        neighborX += dX;
+        neighborY += dY;
     }
 }
 
@@ -205,7 +285,19 @@ function coinFall(x, y){
         <button type="button" onclick="leaveLobby()">Back</button>
     </div>
     <div id="GameScreen">
-        <table>
+        <div id="GameInfoScreen">
+            <div id="GameTextScreen">
+                <h1>Welcome!</h1><br>
+                <input type="text" id="GameCodeBox" placeholder="Enter your answer">
+            </div>
+            <table id="Scoreboard">
+            <tr><td class="gamePlayerNameBox">Player 0</td><td class="gamePlayerScoreBox">0</td><tr>
+            <tr><td class="gamePlayerNameBox">Player 1</td><td class="gamePlayerScoreBox">0</td><tr>
+            <tr><td class="gamePlayerNameBox">Player 2</td><td class="gamePlayerScoreBox">0</td><tr>
+            <tr><td class="gamePlayerNameBox">Player 3</td><td class="gamePlayerScoreBox">0</td><tr>
+            </table>
+        </div>
+        <table id="GameBoardScreen">
             <tr>
                 <td class="slot" id="Slot0-5" onmouseover="hoverSlot(0, 5)" onclick="clickSlot(0, 5)">&nbsp;</td>
                 <td class="slot" id="Slot1-5" onmouseover="hoverSlot(1, 5)" onclick="clickSlot(1, 5)">&nbsp;</td>
@@ -260,7 +352,8 @@ function coinFall(x, y){
                 <td class="slot" id="Slot5-0" onmouseover="hoverSlot(5, 0)" onclick="clickSlot(5, 0)">&nbsp;</td>
                 <td class="slot" id="Slot6-0" onmouseover="hoverSlot(6, 0)" onclick="clickSlot(6, 0)">&nbsp;</td>
             </tr>
-        </table>
+        </table><br>
+        <button type="button" onclick="">Leave Game</button>
     </div>
     </center>
 </body>
