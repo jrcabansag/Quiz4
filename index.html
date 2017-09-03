@@ -4,8 +4,17 @@
     <title>Study4</title>
 </head>
 <style>
-    #WelcomeScreen{
+    td{
+        border: 1px solid black;
+        text-align: center;
+        margin: auto;
+    }
+    select{
         display: none;
+        text-align: center;
+    }
+    #WelcomeScreen{
+        display: block;
     }
     #CreateGameScreen{
         display: none;
@@ -16,8 +25,14 @@
     #LobbyScreen{
         display: none;
     }
+    .LobbyPlayerNameBox{
+        min-width: 150px;
+    }
+    .LobbyPlayerTeamBox{
+        min-width: 150px;
+    }
     #GameScreen{
-        display: block;
+        display: none;
     }
     #GameInfoScreen{
         display:inline-block;
@@ -28,7 +43,12 @@
         display:inline-block;
         vertical-align: top;
         border: 1px solid black;
-        background-color: yellow;
+    }
+    .Slot{
+        min-width: 50px;
+        height: 50px;
+        border-radius: 50px;
+        background-color: white;
     }
     #GameTextScreen{
         height: 230px;
@@ -38,27 +58,16 @@
         align-items: center;
         justify-content: center;
     }
-    #Scoreboard{
+    #GameScoreboard{
         width: 100%;
     }
-    .gamePlayerNameBox{
+    .GamePlayerNameBox{
         font-weight: bold;
         width: calc(100%-50px);
     }
-    .gamePlayerScoreBox{
+    .GamePlayerScoreBox{
         width: 50px;
         min-width: 50px;
-    }
-    td{
-        border: 1px solid black;
-        text-align: center;
-        min-width: 150px;
-    }
-    .slot{
-        min-width: 50px;
-        height: 50px;
-        border-radius: 50px;
-        background-color: white;
     }
 </style>
 <script src="/socket.io/socket.io.js"></script>
@@ -72,7 +81,6 @@ var gameScreen;
 var currentScreen;
 var gameSlotMatrix = new Array(7);
 var coinMatrix = new Array(7);
-var currentHoverColumn = -1;
 var coinStatus = 1;
 
 function init(){
@@ -99,6 +107,11 @@ function init(){
 
 function initSocket(){
     socket = io();
+    
+    socket.on('errorMessage', function(message){
+        alert("Error: "+message);
+    });
+    
     socket.on('joinLobby', function(lobby){
         enterLobbyScreen(lobby);
     });
@@ -107,8 +120,12 @@ function initSocket(){
         updateLobby(lobby);
     });
     
-    socket.on('errorMessage', function(message){
-        alert("Error: "+message);
+    socket.on('joinGame', function(game){
+        enterGameScreen(game);
+    });
+    
+    socket.on('updateGame', function(game){
+       updateGame(game);
     });
 }
 
@@ -168,17 +185,70 @@ function updateLobby(lobby){
     gameCodeLabel.innerHTML = "Game Code: "+lobby.gameCode;
     for(var playerIndex = 0; playerIndex < 4; playerIndex++){
         var playerLabel = document.getElementById("Player"+playerIndex+"Label");
+        var playerTeamSelect = document.getElementById("Player"+playerIndex+"Team");
         if(playerIndex < lobby.players.length){
             playerLabel.innerHTML = lobby.players[playerIndex];
+            playerTeamSelect.style.display = "inline-block";
+            if(lobby.teams[playerIndex] != ""){
+                playerTeamSelect.value = lobby.teams[playerIndex];
+                playerTeamSelect.style.backgroundColor = lobby.teams[playerIndex].toLowerCase();
+            }
+            else{
+                playerTeamSelect.selectedIndex = 0;
+                playerTeamSelect.style.backgroundColor = "white"
+            }
         }
         else{
             playerLabel.innerHTML = "&nbsp;";
+            playerTeamSelect.style.display = "none";
         }
     }
 }
 
+function changeTeamRequest(playerIndex){
+    var playerTeam = document.getElementById("Player"+playerIndex+"Team");
+    socket.emit('changeTeamRequest', playerIndex, playerTeam.value);
+}
+
 function leaveLobby(){
     socket.emit('leaveLobby');
+    changeScreen(welcomeScreen);
+}
+
+function startGameRequest(){
+    socket.emit('startGameRequest');
+}
+
+function enterGameScreen(game){
+    changeScreen(gameScreen);
+    updateGame(game);
+}
+
+function updateGame(game){
+    for(var playerIndex = 0; playerIndex < 4; playerIndex++){
+        var playerNameBox = document.getElementById("GamePlayer"+playerIndex+"NameBox");
+        var playerScoreBox = document.getElementById("GamePlayer"+playerIndex+"ScoreBox");
+        if(playerIndex < game.players.length){
+            playerNameBox.innerHTML = game.players[playerIndex];
+            playerScoreBox.innerHTML = game.scores[playerIndex];
+            if(game.statuses[playerIndex] != -1){
+                playerNameBox.style.backgroundColor = game.teams[playerIndex].toLowerCase();
+                playerScoreBox.style.backgroundColor = "white";
+            }
+            else{
+                playerNameBox.style.backgroundColor = "gray";
+                playerScoreBox.style.backgroundColor = "gray";
+            }
+        }
+        else{
+            var playerInfoBox = document.getElementById("GamePlayer"+playerIndex+"InfoBox");
+            playerInfoBox.style.display = "none";
+        }
+    }
+}
+
+function leaveGame(){
+    socket.emit('leaveGame');
     changeScreen(welcomeScreen);
 }
 
@@ -276,12 +346,57 @@ function highlightNeighbors(x, y, dX, dY, neighborCount){
     <div id="LobbyScreen">
         <h2 id="GameCodeLabel">Game Code:</h2>
         <table>
-            <tr><td id="Player0Label">&nbsp;</td></tr>
-            <tr><td id="Player1Label">&nbsp;</td></tr>
-            <tr><td id="Player2Label">&nbsp;</td></tr>
-            <tr><td id="Player3Label">&nbsp;</td></tr>
+            <tr><td class="LobbyPlayerNameBox"><strong>Player</strong></td><td class="LobbyPlayerTeamBox"><strong>Team</strong></td></tr>
+            <tr>
+                <td id="Player0Label" class="LobbyPlayerNameBox">&nbsp;</td>
+                <td class="LobbyPlayerTeamBox">
+                    <select onchange="changeTeamRequest(0)" id="Player0Team">
+                        <option disabled selected>Select a team</option>
+                        <option>Red</option>
+                        <option>Yellow</option>
+                        <option>Blue</option>
+                        <option>Green</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td id="Player1Label" class="LobbyPlayerNameBox">&nbsp;</td>
+                <td class="LobbyPlayerTeamBox">
+                    <select onchange="changeTeamRequest(1)" id="Player1Team">
+                        <option disabled selected>Select a team</option>
+                        <option>Red</option>
+                        <option>Yellow</option>
+                        <option>Blue</option>
+                        <option>Green</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td id="Player2Label" class="LobbyPlayerNameBox">&nbsp;</td>
+                <td class="LobbyPlayerTeamBox">
+                    <select onchange="changeTeamRequest(2)" id="Player2Team">
+                        <option disabled selected>Select a team</option>
+                        <option>Red</option>
+                        <option>Yellow</option>
+                        <option>Blue</option>
+                        <option>Green</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td id="Player3Label" class="LobbyPlayerNameBox">&nbsp;</td>
+                <td class="LobbyPlayerTeamBox">
+                    <select onchange="changeTeamRequest(3)" id="Player3Team">
+                        <option disabled selected>Select a team</option>
+                        <option>Red</option>
+                        <option>Yellow</option>
+                        <option>Blue</option>
+                        <option>Green</option>
+                    </select>
+                </td>
+            </tr>
         </table>
-        <button type="button" onclick="alert('Started Game!')">Start Game</button>
+        <button type="button" onclick="startGameRequest()">Start Game</button>
         <button type="button" onclick="leaveLobby()">Back</button>
     </div>
     <div id="GameScreen">
@@ -290,70 +405,70 @@ function highlightNeighbors(x, y, dX, dY, neighborCount){
                 <h1>Welcome!</h1><br>
                 <input type="text" id="GameCodeBox" placeholder="Enter your answer">
             </div>
-            <table id="Scoreboard">
-            <tr><td class="gamePlayerNameBox">Player 0</td><td class="gamePlayerScoreBox">0</td><tr>
-            <tr><td class="gamePlayerNameBox">Player 1</td><td class="gamePlayerScoreBox">0</td><tr>
-            <tr><td class="gamePlayerNameBox">Player 2</td><td class="gamePlayerScoreBox">0</td><tr>
-            <tr><td class="gamePlayerNameBox">Player 3</td><td class="gamePlayerScoreBox">0</td><tr>
+            <table id="GameScoreboard">
+            <tr id="GamePlayer0InfoBox"><td id="GamePlayer0NameBox" class="GamePlayerNameBox">Player 0</td><td id="GamePlayer0ScoreBox" class="GamePlayerScoreBox">0</td><tr>
+            <tr id="GamePlayer1InfoBox"><td id="GamePlayer1NameBox" class="GamePlayerNameBox">Player 1</td><td id="GamePlayer1ScoreBox" class="GamePlayerScoreBox">0</td><tr>
+            <tr id="GamePlayer2InfoBox"><td id="GamePlayer2NameBox" class="GamePlayerNameBox">Player 2</td><td id="GamePlayer2ScoreBox" class="GamePlayerScoreBox">0</td><tr>
+            <tr id="GamePlayer3InfoBox"><td id="GamePlayer3NameBox" class="GamePlayerNameBox">Player 3</td><td id="GamePlayer3ScoreBox" class="GamePlayerScoreBox">0</td><tr>
             </table>
         </div>
         <table id="GameBoardScreen">
             <tr>
-                <td class="slot" id="Slot0-5" onmouseover="hoverSlot(0, 5)" onclick="clickSlot(0, 5)">&nbsp;</td>
-                <td class="slot" id="Slot1-5" onmouseover="hoverSlot(1, 5)" onclick="clickSlot(1, 5)">&nbsp;</td>
-                <td class="slot" id="Slot2-5" onmouseover="hoverSlot(2, 5)" onclick="clickSlot(2, 5)">&nbsp;</td>
-                <td class="slot" id="Slot3-5" onmouseover="hoverSlot(3, 5)" onclick="clickSlot(3, 5)">&nbsp;</td>
-                <td class="slot" id="Slot4-5" onmouseover="hoverSlot(4, 5)" onclick="clickSlot(4, 5)">&nbsp;</td>
-                <td class="slot" id="Slot5-5" onmouseover="hoverSlot(5, 5)" onclick="clickSlot(5, 5)">&nbsp;</td>
-                <td class="slot" id="Slot6-5" onmouseover="hoverSlot(6, 5)" onclick="clickSlot(6, 5)">&nbsp;</td>
+                <td class="Slot" id="Slot0-5" onmouseover="hoverSlot(0, 5)" onclick="clickSlot(0, 5)">&nbsp;</td>
+                <td class="Slot" id="Slot1-5" onmouseover="hoverSlot(1, 5)" onclick="clickSlot(1, 5)">&nbsp;</td>
+                <td class="Slot" id="Slot2-5" onmouseover="hoverSlot(2, 5)" onclick="clickSlot(2, 5)">&nbsp;</td>
+                <td class="Slot" id="Slot3-5" onmouseover="hoverSlot(3, 5)" onclick="clickSlot(3, 5)">&nbsp;</td>
+                <td class="Slot" id="Slot4-5" onmouseover="hoverSlot(4, 5)" onclick="clickSlot(4, 5)">&nbsp;</td>
+                <td class="Slot" id="Slot5-5" onmouseover="hoverSlot(5, 5)" onclick="clickSlot(5, 5)">&nbsp;</td>
+                <td class="Slot" id="Slot6-5" onmouseover="hoverSlot(6, 5)" onclick="clickSlot(6, 5)">&nbsp;</td>
             </tr>
             <tr>
-                <td class="slot" id="Slot0-4" onmouseover="hoverSlot(0, 4)" onclick="clickSlot(0, 4)">&nbsp;</td>
-                <td class="slot" id="Slot1-4" onmouseover="hoverSlot(1, 4)" onclick="clickSlot(1, 4)">&nbsp;</td>
-                <td class="slot" id="Slot2-4" onmouseover="hoverSlot(2, 4)" onclick="clickSlot(2, 4)">&nbsp;</td>
-                <td class="slot" id="Slot3-4" onmouseover="hoverSlot(3, 4)" onclick="clickSlot(3, 4)">&nbsp;</td>
-                <td class="slot" id="Slot4-4" onmouseover="hoverSlot(4, 4)" onclick="clickSlot(4, 4)">&nbsp;</td>
-                <td class="slot" id="Slot5-4" onmouseover="hoverSlot(5, 4)" onclick="clickSlot(5, 4)">&nbsp;</td>
-                <td class="slot" id="Slot6-4" onmouseover="hoverSlot(6, 4)" onclick="clickSlot(6, 4)">&nbsp;</td>
+                <td class="Slot" id="Slot0-4" onmouseover="hoverSlot(0, 4)" onclick="clickSlot(0, 4)">&nbsp;</td>
+                <td class="Slot" id="Slot1-4" onmouseover="hoverSlot(1, 4)" onclick="clickSlot(1, 4)">&nbsp;</td>
+                <td class="Slot" id="Slot2-4" onmouseover="hoverSlot(2, 4)" onclick="clickSlot(2, 4)">&nbsp;</td>
+                <td class="Slot" id="Slot3-4" onmouseover="hoverSlot(3, 4)" onclick="clickSlot(3, 4)">&nbsp;</td>
+                <td class="Slot" id="Slot4-4" onmouseover="hoverSlot(4, 4)" onclick="clickSlot(4, 4)">&nbsp;</td>
+                <td class="Slot" id="Slot5-4" onmouseover="hoverSlot(5, 4)" onclick="clickSlot(5, 4)">&nbsp;</td>
+                <td class="Slot" id="Slot6-4" onmouseover="hoverSlot(6, 4)" onclick="clickSlot(6, 4)">&nbsp;</td>
             </tr>
             <tr>
-                <td class="slot" id="Slot0-3" onmouseover="hoverSlot(0, 3)" onclick="clickSlot(0, 3)">&nbsp;</td>
-                <td class="slot" id="Slot1-3" onmouseover="hoverSlot(1, 3)" onclick="clickSlot(1, 3)">&nbsp;</td>
-                <td class="slot" id="Slot2-3" onmouseover="hoverSlot(2, 3)" onclick="clickSlot(2, 3)">&nbsp;</td>
-                <td class="slot" id="Slot3-3" onmouseover="hoverSlot(3, 3)" onclick="clickSlot(3, 3)">&nbsp;</td>
-                <td class="slot" id="Slot4-3" onmouseover="hoverSlot(4, 3)" onclick="clickSlot(4, 3)">&nbsp;</td>
-                <td class="slot" id="Slot5-3" onmouseover="hoverSlot(5, 3)" onclick="clickSlot(5, 3)">&nbsp;</td>
-                <td class="slot" id="Slot6-3" onmouseover="hoverSlot(6, 3)" onclick="clickSlot(6, 3)">&nbsp;</td>
+                <td class="Slot" id="Slot0-3" onmouseover="hoverSlot(0, 3)" onclick="clickSlot(0, 3)">&nbsp;</td>
+                <td class="Slot" id="Slot1-3" onmouseover="hoverSlot(1, 3)" onclick="clickSlot(1, 3)">&nbsp;</td>
+                <td class="Slot" id="Slot2-3" onmouseover="hoverSlot(2, 3)" onclick="clickSlot(2, 3)">&nbsp;</td>
+                <td class="Slot" id="Slot3-3" onmouseover="hoverSlot(3, 3)" onclick="clickSlot(3, 3)">&nbsp;</td>
+                <td class="Slot" id="Slot4-3" onmouseover="hoverSlot(4, 3)" onclick="clickSlot(4, 3)">&nbsp;</td>
+                <td class="Slot" id="Slot5-3" onmouseover="hoverSlot(5, 3)" onclick="clickSlot(5, 3)">&nbsp;</td>
+                <td class="Slot" id="Slot6-3" onmouseover="hoverSlot(6, 3)" onclick="clickSlot(6, 3)">&nbsp;</td>
             </tr>
             <tr>
-                <td class="slot" id="Slot0-2" onmouseover="hoverSlot(0, 2)" onclick="clickSlot(0, 2)">&nbsp;</td>
-                <td class="slot" id="Slot1-2" onmouseover="hoverSlot(1, 2)" onclick="clickSlot(1, 2)">&nbsp;</td>
-                <td class="slot" id="Slot2-2" onmouseover="hoverSlot(2, 2)" onclick="clickSlot(2, 2)">&nbsp;</td>
-                <td class="slot" id="Slot3-2" onmouseover="hoverSlot(3, 2)" onclick="clickSlot(3, 2)">&nbsp;</td>
-                <td class="slot" id="Slot4-2" onmouseover="hoverSlot(4, 2)" onclick="clickSlot(4, 2)">&nbsp;</td>
-                <td class="slot" id="Slot5-2" onmouseover="hoverSlot(5, 2)" onclick="clickSlot(5, 2)">&nbsp;</td>
-                <td class="slot" id="Slot6-2" onmouseover="hoverSlot(6, 2)" onclick="clickSlot(6, 2)">&nbsp;</td>
+                <td class="Slot" id="Slot0-2" onmouseover="hoverSlot(0, 2)" onclick="clickSlot(0, 2)">&nbsp;</td>
+                <td class="Slot" id="Slot1-2" onmouseover="hoverSlot(1, 2)" onclick="clickSlot(1, 2)">&nbsp;</td>
+                <td class="Slot" id="Slot2-2" onmouseover="hoverSlot(2, 2)" onclick="clickSlot(2, 2)">&nbsp;</td>
+                <td class="Slot" id="Slot3-2" onmouseover="hoverSlot(3, 2)" onclick="clickSlot(3, 2)">&nbsp;</td>
+                <td class="Slot" id="Slot4-2" onmouseover="hoverSlot(4, 2)" onclick="clickSlot(4, 2)">&nbsp;</td>
+                <td class="Slot" id="Slot5-2" onmouseover="hoverSlot(5, 2)" onclick="clickSlot(5, 2)">&nbsp;</td>
+                <td class="Slot" id="Slot6-2" onmouseover="hoverSlot(6, 2)" onclick="clickSlot(6, 2)">&nbsp;</td>
             </tr>
             <tr>
-                <td class="slot" id="Slot0-1" onmouseover="hoverSlot(0, 1)" onclick="clickSlot(0, 1)">&nbsp;</td>
-                <td class="slot" id="Slot1-1" onmouseover="hoverSlot(1, 1)" onclick="clickSlot(1, 1)">&nbsp;</td>
-                <td class="slot" id="Slot2-1" onmouseover="hoverSlot(2, 1)" onclick="clickSlot(2, 1)">&nbsp;</td>
-                <td class="slot" id="Slot3-1" onmouseover="hoverSlot(3, 1)" onclick="clickSlot(3, 1)">&nbsp;</td>
-                <td class="slot" id="Slot4-1" onmouseover="hoverSlot(4, 1)" onclick="clickSlot(4, 1)">&nbsp;</td>
-                <td class="slot" id="Slot5-1" onmouseover="hoverSlot(5, 1)" onclick="clickSlot(5, 1)">&nbsp;</td>
-                <td class="slot" id="Slot6-1" onmouseover="hoverSlot(6, 1)" onclick="clickSlot(6, 1)">&nbsp;</td>
+                <td class="Slot" id="Slot0-1" onmouseover="hoverSlot(0, 1)" onclick="clickSlot(0, 1)">&nbsp;</td>
+                <td class="Slot" id="Slot1-1" onmouseover="hoverSlot(1, 1)" onclick="clickSlot(1, 1)">&nbsp;</td>
+                <td class="Slot" id="Slot2-1" onmouseover="hoverSlot(2, 1)" onclick="clickSlot(2, 1)">&nbsp;</td>
+                <td class="Slot" id="Slot3-1" onmouseover="hoverSlot(3, 1)" onclick="clickSlot(3, 1)">&nbsp;</td>
+                <td class="Slot" id="Slot4-1" onmouseover="hoverSlot(4, 1)" onclick="clickSlot(4, 1)">&nbsp;</td>
+                <td class="Slot" id="Slot5-1" onmouseover="hoverSlot(5, 1)" onclick="clickSlot(5, 1)">&nbsp;</td>
+                <td class="Slot" id="Slot6-1" onmouseover="hoverSlot(6, 1)" onclick="clickSlot(6, 1)">&nbsp;</td>
             </tr>
             <tr>
-                <td class="slot" id="Slot0-0" onmouseover="hoverSlot(0, 0)" onclick="clickSlot(0, 0)">&nbsp;</td>
-                <td class="slot" id="Slot1-0" onmouseover="hoverSlot(1, 0)" onclick="clickSlot(1, 0)">&nbsp;</td>
-                <td class="slot" id="Slot2-0" onmouseover="hoverSlot(2, 0)" onclick="clickSlot(2, 0)">&nbsp;</td>
-                <td class="slot" id="Slot3-0" onmouseover="hoverSlot(3, 0)" onclick="clickSlot(3, 0)">&nbsp;</td>
-                <td class="slot" id="Slot4-0" onmouseover="hoverSlot(4, 0)" onclick="clickSlot(4, 0)">&nbsp;</td>
-                <td class="slot" id="Slot5-0" onmouseover="hoverSlot(5, 0)" onclick="clickSlot(5, 0)">&nbsp;</td>
-                <td class="slot" id="Slot6-0" onmouseover="hoverSlot(6, 0)" onclick="clickSlot(6, 0)">&nbsp;</td>
+                <td class="Slot" id="Slot0-0" onmouseover="hoverSlot(0, 0)" onclick="clickSlot(0, 0)">&nbsp;</td>
+                <td class="Slot" id="Slot1-0" onmouseover="hoverSlot(1, 0)" onclick="clickSlot(1, 0)">&nbsp;</td>
+                <td class="Slot" id="Slot2-0" onmouseover="hoverSlot(2, 0)" onclick="clickSlot(2, 0)">&nbsp;</td>
+                <td class="Slot" id="Slot3-0" onmouseover="hoverSlot(3, 0)" onclick="clickSlot(3, 0)">&nbsp;</td>
+                <td class="Slot" id="Slot4-0" onmouseover="hoverSlot(4, 0)" onclick="clickSlot(4, 0)">&nbsp;</td>
+                <td class="Slot" id="Slot5-0" onmouseover="hoverSlot(5, 0)" onclick="clickSlot(5, 0)">&nbsp;</td>
+                <td class="Slot" id="Slot6-0" onmouseover="hoverSlot(6, 0)" onclick="clickSlot(6, 0)">&nbsp;</td>
             </tr>
         </table><br>
-        <button type="button" onclick="">Leave Game</button>
+        <button type="button" onclick="leaveGame()">Leave Game</button>
     </div>
     </center>
 </body>
