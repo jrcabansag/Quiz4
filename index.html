@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html>
 <head>
-    <title>Study4</title>
+    <title>Quiz4</title>
 </head>
 <style>
     td{
@@ -84,6 +84,7 @@ var gameHeader;
 var gameTimer;
 var answerBox;
 var gameIteration = -1;
+var gamePhase;
 var coinMatrix = new Array(7);
 var coinStatus = 1;
 
@@ -93,20 +94,10 @@ function init(){
     joinGameScreen = document.getElementById('JoinGameScreen');
     lobbyScreen = document.getElementById('LobbyScreen');
     gameScreen = document.getElementById('GameScreen');
+    answerBox = document.getElementById('AnswerBox');
     currentScreen = welcomeScreen;
     initSocket();
     initGameSlots();
-    window.onkeyup = function(e) {
-        var key = e.keyCode ? e.keyCode : e.which;
-        if(key == 32){
-            if(coinStatus == 1){
-                coinStatus = 2;
-            }
-            else{
-                coinStatus = 1;
-            }
-        }
-    }
 }
 
 function initSocket(){
@@ -132,21 +123,43 @@ function initSocket(){
        updateGame(game);
     });
     
-    socket.on('updateGameText', function(game){
-       updateGameText(game);
+    socket.on('updateGameText', function(phase, extra){
+       updateGameText(phase, extra);
+    });
+    
+    socket.on('wrongAnswer', function(answer){
+        updateGameText("WrongAnswer", answer)
     });
     
     socket.on('changeTimer', function(time, iteration){
         updateTimer(time, iteration);
     });
+    
+    socket.on('coinDrop', function(x, y, color){
+        placeCoin(x, y, color);
+    });
+    
+    window.onkeyup = function(e) {
+        var key = e.keyCode ? e.keyCode : e.which;
+        if(key == 13 && answerBox.style.display == "inline-block" && answerBox.value != ""){
+            socket.emit('submitAnswer', answerBox.value);
+        }
+    }
 }
 
 function initGameSlots(){
     for(var x = 0; x < 7; x++){
         gameSlotMatrix[x] = new Array(6);
-        coinMatrix[x] = new Array(6);
         for(var y = 0; y < 6; y++){
             gameSlotMatrix[x][y] = document.getElementById("Slot"+x+"-"+y);
+        }
+    }
+}
+
+function initCoinMatrix(){
+    for(var x = 0; x < 7; x++){
+        coinMatrix[x] = new Array(6);
+        for(var y = 0; y < 6; y++){
             coinMatrix[x][y] = -1;
         }
     }
@@ -235,6 +248,13 @@ function enterGameScreen(game){
     gameHeader = document.getElementById("GameHeader");
     gameTimer = document.getElementById("GameTimer");
     answerBox = document.getElementById("AnswerBox");
+    gameIteration = -1;
+    initCoinMatrix();
+    for(var x = 0; x < 7; x++){
+        for(var y = 0; y < 6; y++){
+            gameSlotMatrix[x][y].style.backgroundColor = "white";
+        }
+    }
     changeScreen(gameScreen);
     updateGame(game);
 }
@@ -262,12 +282,63 @@ function updateGame(game){
     }
 }
 
-function updateGameText(game){
-    if(game.status == "WelcomeCountdown"){
-        gameHeader.innerHTML = "Welcome! The first question will pop up soon.";
-    }
-    if(game.status != "Question"){
+function updateGameText(phase, extra){
+    gamePhase = phase;
+    if(phase != "Question"){
         answerBox.style.display = "none";
+        answerBox.value = "";
+    }
+    else{
+        answerBox.style.display = "inline-block";
+    }
+    if(phase != "GameWon"){
+        gameTimer.display = "inline-block";
+
+    }
+    else{
+        gameTimer.display = "none";
+    }
+    if(phase == "WelcomeCountdown"){
+        gameHeader.innerHTML = "Welcome! Get ready for the first question...";
+    }
+    else if(phase == "Question"){
+        gameHeader.innerHTML = extra;
+    }
+    else if(phase == "QuestionCountdown"){
+        gameHeader.innerHTML = "Get ready for the next question...";
+    }
+    else if(phase == "NoCorrectCountdown"){
+        gameHeader.innerHTML = "No one got the correct answer: "+extra+"! Get ready for the next question...";
+    }
+    else if(phase == "CoinDropCountdown"){
+        gameHeader.innerHTML = extra.correctAnswerer+" got the correct answer: "+extra.answer+". Waiting for them to drop a coin...";
+    }
+    else if(phase == "CoinDrop"){
+        gameHeader.innerHTML = "You got the correct answer: "+extra+"! Please drop a coin...";
+    }
+    else if(phase == "WrongAnswer"){
+        gameHeader.innerHTML = "Incorrect answer! The right answer was "+extra+".";
+    }
+    else if(phase == "GameWon"){
+        if(extra.length == 0){
+            gameHeader.innerHTML = "It's a draw! Everyone wins!";
+        }
+        else{
+            var winString = "";
+            for(var winnerIndex = 0; winnerIndex < extra.length; winnerIndex++){
+                winString += extra[winnerIndex]
+                if(winnerIndex < extra.length-1){
+                    winString += " & ";
+                }
+            }
+            if(extra.length > 1){
+                winString += " win!";
+            }
+            else{
+                winString += " wins!";
+            }
+            gameHeader.innerHTML = winString;
+        }
     }
 }
 
@@ -286,6 +357,7 @@ function updateTimer(time, iteration){
 
 function leaveGame(){
     socket.emit('leaveGame');
+    var gameIteration = -1;
     changeScreen(welcomeScreen);
 }
 
@@ -293,18 +365,15 @@ function hoverSlot(x, y){
 }
 
 function clickSlot(x, y){
-    placeCoin(x, y);
+    if(gamePhase == "CoinDrop"){
+        socket.emit('placeCoin', x, y);
+    }
 }
 
-function placeCoin(x, y){
+function placeCoin(x, y, color){
     if(coinMatrix[x][5] == -1){
-        coinMatrix[x][5] = coinStatus;
-        if(coinStatus == 1){
-            gameSlotMatrix[x][5].style.backgroundColor = "red";
-        }
-        else{
-            gameSlotMatrix[x][5].style.backgroundColor = "black";
-        }
+        coinMatrix[x][5] = color;
+        gameSlotMatrix[x][5].style.backgroundColor = color;
         setTimeout(function(){ coinFall(x, 5); }, 50);
     }
 }
@@ -364,7 +433,7 @@ function highlightNeighbors(x, y, dX, dY, neighborCount){
 </script>
 <body onload="init()">
     <center>
-    <h1>Study4</h1>
+    <h1>Quiz4</h1>
     <div id="WelcomeScreen">
         <button type="button" onclick="changeScreen(createGameScreen)">New Game</button>
         <button type="button" onclick="changeScreen(joinGameScreen)">Join Game</button>
@@ -390,9 +459,12 @@ function highlightNeighbors(x, y, dX, dY, neighborCount){
                     <select onchange="changeTeamRequest(0)" id="Player0Team">
                         <option disabled selected>Select a team</option>
                         <option>Red</option>
+                        <option>Orange</option>
                         <option>Yellow</option>
-                        <option>Blue</option>
                         <option>Green</option>
+                        <option>Blue</option>
+                        <option>Purple</option>
+                        <option>Pink</option>
                     </select>
                 </td>
             </tr>
@@ -402,9 +474,12 @@ function highlightNeighbors(x, y, dX, dY, neighborCount){
                     <select onchange="changeTeamRequest(1)" id="Player1Team">
                         <option disabled selected>Select a team</option>
                         <option>Red</option>
+                        <option>Orange</option>
                         <option>Yellow</option>
-                        <option>Blue</option>
                         <option>Green</option>
+                        <option>Blue</option>
+                        <option>Purple</option>
+                        <option>Pink</option>
                     </select>
                 </td>
             </tr>
@@ -414,9 +489,12 @@ function highlightNeighbors(x, y, dX, dY, neighborCount){
                     <select onchange="changeTeamRequest(2)" id="Player2Team">
                         <option disabled selected>Select a team</option>
                         <option>Red</option>
+                        <option>Orange</option>
                         <option>Yellow</option>
-                        <option>Blue</option>
                         <option>Green</option>
+                        <option>Blue</option>
+                        <option>Purple</option>
+                        <option>Pink</option>
                     </select>
                 </td>
             </tr>
@@ -426,9 +504,12 @@ function highlightNeighbors(x, y, dX, dY, neighborCount){
                     <select onchange="changeTeamRequest(3)" id="Player3Team">
                         <option disabled selected>Select a team</option>
                         <option>Red</option>
+                        <option>Orange</option>
                         <option>Yellow</option>
-                        <option>Blue</option>
                         <option>Green</option>
+                        <option>Blue</option>
+                        <option>Purple</option>
+                        <option>Pink</option>
                     </select>
                 </td>
             </tr>
@@ -439,9 +520,9 @@ function highlightNeighbors(x, y, dX, dY, neighborCount){
     <div id="GameScreen">
         <div id="GameInfoScreen">
             <div id="GameTextScreen">
-                <h1 id="GameHeader">Welcome!</h1><br>
-                <h2 id="GameTimer">0:00</h2>
+                <h2 id="GameHeader">Welcome!</h2>
                 <input type="text" id="AnswerBox" placeholder="Enter your answer">
+                <h2 id="GameTimer">0:00</h2>
             </div>
             <table id="GameScoreboard">
             <tr id="GamePlayer0InfoBox"><td id="GamePlayer0NameBox" class="GamePlayerNameBox">Player 0</td><td id="GamePlayer0ScoreBox" class="GamePlayerScoreBox">0</td><tr>
