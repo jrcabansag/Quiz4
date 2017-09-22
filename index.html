@@ -83,6 +83,7 @@ var gameSlotMatrix = new Array(7);
 var gameHeader;
 var gameTimer;
 var answerBox;
+var playAgainButton;
 var gameIteration = -1;
 var gamePhase;
 var coinMatrix = new Array(7);
@@ -95,6 +96,7 @@ function init(){
     lobbyScreen = document.getElementById('LobbyScreen');
     gameScreen = document.getElementById('GameScreen');
     answerBox = document.getElementById('AnswerBox');
+    playAgainButton = document.getElementById('PlayAgainButton');
     currentScreen = welcomeScreen;
     initSocket();
     initGameSlots();
@@ -292,11 +294,12 @@ function updateGameText(phase, extra){
         answerBox.style.display = "inline-block";
     }
     if(phase != "GameWon"){
-        gameTimer.display = "inline-block";
-
+        gameTimer.style.display = "inline-block";
+        playAgainButton.style.display = "none";
     }
     else{
-        gameTimer.display = "none";
+        gameTimer.style.display = "none";
+        playAgainButton.style.display = "inline-block";
     }
     if(phase == "WelcomeCountdown"){
         gameHeader.innerHTML = "Welcome! Get ready for the first question...";
@@ -430,6 +433,14 @@ function highlightNeighbors(x, y, dX, dY, neighborCount){
     }
 }
 
+function playAgainRequest(){
+    alert("PLAY AGAIN!");
+}
+
+function endGameRequest(){
+    alert("END GAME!");
+}
+
 </script>
 <body onload="init()">
     <center>
@@ -523,6 +534,7 @@ function highlightNeighbors(x, y, dX, dY, neighborCount){
                 <h2 id="GameHeader">Welcome!</h2>
                 <input type="text" id="AnswerBox" placeholder="Enter your answer">
                 <h2 id="GameTimer">0:00</h2>
+                <button type="button" id="PlayAgainButton" onclick="playAgainRequest()">Play Again</button>
             </div>
             <table id="GameScoreboard">
             <tr id="GamePlayer0InfoBox"><td id="GamePlayer0NameBox" class="GamePlayerNameBox">Player 0</td><td id="GamePlayer0ScoreBox" class="GamePlayerScoreBox">0</td><tr>
@@ -588,6 +600,7 @@ function highlightNeighbors(x, y, dX, dY, neighborCount){
             </tr>
         </table><br>
         <button type="button" onclick="leaveGame()">Leave Game</button>
+        <button type="button" onclick="endGameRequest()">End Game</button>
     </div>
     </center>
 </body>
