@@ -205,24 +205,29 @@ function countSameNeighbors(board, x, y, dX, dY){
 }
 
 function checkAnswer(answer, game){
-    answer = answer.toLowerCase();
-    var gameWord = game.word
-    if(answer == gameWord){
-        return true;
-    }
-    else if(answer.length != gameWord.length){
-        return false;
-    }
-    var currAnswerWord = answer;
-    for(var x = 0; x < answer.length; x++){
-        var prevAnswerWord = currAnswerWord;
-        currAnswerWord = currAnswerWord.replace(answer[x], '');
-        if(prevAnswerWord == currAnswerWord){
+    if(game.phase == "Question"){
+        answer = answer.toLowerCase();
+        var gameWord = game.word
+        if(answer == gameWord){
+            return true;
+        }
+        else if(answer.length != gameWord.length){
             return false;
         }
-    }
-    if(currAnswerWord == "" && bigWordSet.has(answer)){
-        return true;
+        var currAnswerWord = answer;
+        for(var x = 0; x < answer.length; x++){
+            var prevAnswerWord = currAnswerWord;
+            currAnswerWord = currAnswerWord.replace(answer[x], '');
+            if(prevAnswerWord == currAnswerWord){
+                return false;
+            }
+        }
+        if(currAnswerWord == "" && bigWordSet.has(answer)){
+            return true;
+        }
+        else{
+            return false;
+        }
     }
     else{
         return false;
