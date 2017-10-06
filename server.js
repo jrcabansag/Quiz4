@@ -12,11 +12,9 @@ function loadWordDictionaries(){
     var fileReader = require('fs')
     fileReader.readFile("words.txt", 'utf8', function(err, data) {
         wordArray = data.split("\n");
-        console.log(wordArray);
     });
     fileReader.readFile("dictionary.txt", 'utf8', function(err, data) {
         bigWordSet = new Set(data.split("\n"));
-        console.log(bigWordSet);
     });
 }
 
