@@ -5,6 +5,20 @@ var playersNameDictionary = {};
 var lobbyDictionary = {};
 var playersGameCodeDictionary = {};
 var gameDictionary = {};
+var wordArray = [];
+var bigWordSet = new Set();
+
+function loadWordDictionaries(){
+    var fileReader = require('fs')
+    fileReader.readFile("words.txt", 'utf8', function(err, data) {
+        wordArray = data.split("\n");
+        console.log(wordArray);
+    });
+    fileReader.readFile("dictionary.txt", 'utf8', function(err, data) {
+        bigWordSet = new Set(data.split("\n"));
+        console.log(bigWordSet);
+    });
+}
 
 function generateGameCode(){
     var gameCode = "";
@@ -68,7 +82,13 @@ function createGame(gameCode){
                 board[x][y] = "";
             }
         }
-        gameDictionary[gameCode] = {gameCode: gameCode, players: lobby.players, playerCount: lobby.players.length, teams: lobby.teams, scores: new Array(lobby.players.length).fill(0), statuses: new Array(lobby.players.length), status: "WelcomeCountdown", iteration: 0, board: board, correctAnswerer: "", wrongAnswerCount: 0, questions: ["What is 1+1?", "What is 11-1?"], answers: ["2", "10"], questionIndex: -1, coinCount: 0};
+        var scoreDictionary = {};
+        var teamDictionary = {};
+        for(var x = 0; x < lobby.players.length; x++){
+            scoreDictionary[lobby.players[x]] = 0;
+            teamDictionary[lobby.players[x]] = lobby.teams[x];
+        }
+        gameDictionary[gameCode] = {gameCode: gameCode, players: lobby.players, playerCount: lobby.players.length, teams: teamDictionary, scores: scoreDictionary, statuses: new Array(lobby.players.length), status: "WelcomeCountdown", iteration: 0, board: board, correctAnswerer: "", wrongAnswerCount: 0, questions: ["What is 1+1?", "What is 11-1?"], answers: ["2", "10"], wordScramble: "", word: "", questionIndex: -1, coinCount: 0, gameType: "Word"};
     }
     return gameDictionary[gameCode];
 }
@@ -83,6 +103,9 @@ function removePlayerFromGame(playerSocket){
             delete playersGameCodeDictionary[playerSocketId];
             delete playersNameDictionary[playerSocketId];
             var game = gameDictionary[gameCode];
+            game.players.splice(game.players.indexOf(name), 1);
+            delete game.scores[name];
+            delete game.teams[name];
             game.statuses[game.players.indexOf(name)] = -1;
             game.playerCount -= 1;
             if(game.playerCount > 0){
@@ -105,16 +128,31 @@ function changeGamePhase(gameCode, phase, timer, iteration, extra){
             game.iteration = iteration+1;
             if(phase == "Question"){
                 game.wrongAnswerCount = 0;
-                game.questionIndex = Math.floor(Math.random()*game.questions.length);
-                io.in(gameCode).emit('updateGameText', phase, game.questions[game.questionIndex]);
+                if(game.gameType = "Word"){
+                    game.word = wordArray[Math.floor(Math.random()*wordArray.length)];
+                    var scrambledWord = scrambleWord(game.word);
+                    while(scrambledWord == game.word){
+                        scrambledWord = scrambleWord(game.word);
+                    }
+                    io.in(gameCode).emit('updateGameText', phase, scrambledWord);
+                }
+                // game.questionIndex = Math.floor(Math.random()*game.questions.length);
+                // io.in(gameCode).emit('updateGameText', phase, game.questions[game.questionIndex]);
             }
             else if(phase == "CoinDropCountdown"){
-                extra.broadcast.to(gameCode).emit('updateGameText', phase, {correctAnswerer: game.correctAnswerer, answer: game.answers[game.questionIndex]});
-                extra.emit('updateGameText', "CoinDrop", game.answers[game.questionIndex]);
+                if(game.gameType = "Word"){
+                    extra.broadcast.to(gameCode).emit('updateGameText', phase, {correctAnswerer: game.correctAnswerer, answer: game.word});
+                    extra.emit('updateGameText', "CoinDrop", game.word);
+                }
+                // extra.broadcast.to(gameCode).emit('updateGameText', phase, {correctAnswerer: game.correctAnswerer, answer: game.answers[game.questionIndex]});
+                // extra.emit('updateGameText', "CoinDrop", game.answers[game.questionIndex]);
                 io.in(gameCode).emit('updateGame', game);
             }
             else if(phase == "NoCorrectCountdown"){
-                io.in(gameCode).emit('updateGameText', phase, game.answers[game.questionIndex]);
+                if(game.gameType = "Word"){
+                    io.in(gameCode).emit('updateGameText', phase, game.word);
+                }
+                //io.in(gameCode).emit('updateGameText', phase, game.answers[game.questionIndex]);
             }
             else if(phase == "GameWon"){
                 io.in(gameCode).emit('updateGameText', phase, extra);
@@ -126,7 +164,7 @@ function changeGamePhase(gameCode, phase, timer, iteration, extra){
             io.in(gameCode).emit('changeTimer',timer, gameDictionary[gameCode].iteration);
             setTimeout(function(){
                 if(phase == "WelcomeCountdown" || phase == "NoCorrectCountdown" || phase == "QuestionCountdown"){
-                    changeGamePhase(gameCode, "Question", 20, iteration+1, "");
+                    changeGamePhase(gameCode, "Question", 59, iteration+1, "");
                 }
                 else if(phase == "CoinDropCountdown"){
                     changeGamePhase(gameCode, "QuestionCountdown", 4, iteration+1, "");
@@ -168,9 +206,47 @@ function countSameNeighbors(board, x, y, dX, dY){
     return neighborCount;
 }
 
+function checkAnswer(answer, game){
+    answer = answer.toLowerCase();
+    var gameWord = game.word
+    if(answer == gameWord){
+        return true;
+    }
+    else if(answer.length != gameWord.length){
+        return false;
+    }
+    var currAnswerWord = answer;
+    for(var x = 0; x < answer.length; x++){
+        var prevAnswerWord = currAnswerWord;
+        currAnswerWord = currAnswerWord.replace(answer[x], '');
+        if(prevAnswerWord == currAnswerWord){
+            return false;
+        }
+    }
+    if(currAnswerWord == "" && bigWordSet.has(answer)){
+        return true;
+    }
+    else{
+        return false;
+    }
+}
+
+function scrambleWord(word){
+    var newWord = "";
+    var currWord = word;
+    while(currWord != ""){
+        var randomIndex = Math.floor(Math.random()*currWord.length);
+        newWord += currWord[randomIndex];
+        currWord = currWord.replace(currWord[randomIndex], '');
+    }
+    return newWord;
+}
+
 app.get('/', function(req, res){
     res.sendFile(__dirname + '/index.html');
 });
+
+loadWordDictionaries();
 
 io.on('connection', function(socket){
     socket.on('newGameRequest', function(name){
@@ -213,24 +289,19 @@ io.on('connection', function(socket){
             var gameCode = playersGameCodeDictionary[playerSocketId];
             if(gameCode in lobbyDictionary){
                 var lobby = lobbyDictionary[gameCode];
-                if(lobby.players.length < 2){
-                    socket.emit('errorMessage', "You cannot play by yourself! Maybe try getting some friends?");
+                var canStartGame = true;
+                for(var playerIndex = 0; playerIndex < lobby.players.length; playerIndex++){
+                    if(lobby.teams[playerIndex] == ""){
+                        canStartGame = false;
+                    }
+                }
+                if(canStartGame){
+                    var game = createGame(gameCode);
+                    io.in(gameCode).emit('joinGame', game);
+                    changeGamePhase(gameCode, "WelcomeCountdown", 7, game.iteration, "");
                 }
                 else{
-                    var canStartGame = true;
-                    for(var playerIndex = 0; playerIndex < lobby.players.length; playerIndex++){
-                        if(lobby.teams[playerIndex] == ""){
-                            canStartGame = false;
-                        }
-                    }
-                    if(canStartGame){
-                        var game = createGame(gameCode);
-                        io.in(gameCode).emit('joinGame', game);
-                        changeGamePhase(gameCode, "WelcomeCountdown", 7, game.iteration, "");
-                    }
-                    else{
-                        socket.emit('errorMessage', "Not everyone has selected a team!");
-                    }
+                    socket.emit('errorMessage', "Not everyone has selected a team!");
                 }
             }
         }
@@ -243,21 +314,40 @@ io.on('connection', function(socket){
             if(gameCode in gameDictionary){
                 var game = gameDictionary[gameCode];
                 if(game.status = "Question"){
-                    if(answer == game.answers[game.questionIndex]){
-                        game.correctAnswerer = playersNameDictionary[socket.id];
-                        game.scores[game.players.indexOf(game.correctAnswerer)] += 1;
-                        gameDictionary[gameCode] = game;
-                        changeGamePhase(gameCode, "CoinDropCountdown", 15, game.iteration, socket);
-                    }
-                    else{
-                        game.wrongAnswerCount += 1;
-                        if(game.wrongAnswerCount >= game.playerCount){
-                            changeGamePhase(gameCode, "NoCorrectCountdown", 7, game.iteration, "");
+                    if(game.gameType = "Word"){
+                        var result = checkAnswer(answer, game);
+                        if(result){
+                            game.word = answer;
+                            game.correctAnswerer = playersNameDictionary[socket.id];
+                            game.scores[playersNameDictionary[socket.id]] += 1;
+                            gameDictionary[gameCode] = game;
+                            changeGamePhase(gameCode, "CoinDropCountdown", 15, game.iteration, socket);
                         }
                         else{
-                            socket.emit('wrongAnswer', game.answers[game.questionIndex]);
+                            game.wrongAnswerCount += 1;
+                            if(game.wrongAnswerCount >= game.playerCount){
+                                changeGamePhase(gameCode, "NoCorrectCountdown", 7, game.iteration, "");
+                            }
+                            else{
+                                socket.emit('wrongAnswer', game.word);
+                            }
                         }
                     }
+                    // if(answer == game.answers[game.questionIndex]){
+                    //     game.correctAnswerer = playersNameDictionary[socket.id];
+                    //     game.scores[playersNameDictionary[socket.id]] += 1;
+                    //     gameDictionary[gameCode] = game;
+                    //     changeGamePhase(gameCode, "CoinDropCountdown", 15, game.iteration, socket);
+                    // }
+                    // else{
+                    //     game.wrongAnswerCount += 1;
+                    //     if(game.wrongAnswerCount >= game.playerCount){
+                    //         changeGamePhase(gameCode, "NoCorrectCountdown", 7, game.iteration, "");
+                    //     }
+                    //     else{
+                    //         socket.emit('wrongAnswer', game.answers[game.questionIndex]);
+                    //     }
+                    // }
                 }
             }
         }
@@ -277,14 +367,15 @@ io.on('connection', function(socket){
                         coinY += 1;
                     }
                     if(coinY < 6){
-                        board[x][coinY] = game.teams[game.players.indexOf(playerName)].toLowerCase();
+                        board[x][coinY] = game.teams[playerName].toLowerCase();
                         gameDictionary[gameCode].board = board;
                         gameDictionary[gameCode].coinCount += 1;
-                        io.in(gameCode).emit('coinDrop', x, y, game.teams[game.players.indexOf(playerName)].toLowerCase());
+                        io.in(gameCode).emit('coinDrop', x, y, game.teams[playerName].toLowerCase());
                         if(checkWinner(board, x, coinY)){
                             var winnerArray = [];
                             for(var playerIndex = 0; playerIndex < game.players.length; playerIndex++){
-                                if(game.teams[playerIndex] == game.teams[game.players.indexOf(playerName)] && game.statuses[playerIndex] != -1){
+                                var otherName = game.players[playerIndex];
+                                if(game.teams[otherName] == game.teams[playerName]){
                                     winnerArray.push(game.players[playerIndex]);
                                 }
                             }

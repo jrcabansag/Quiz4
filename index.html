@@ -63,7 +63,7 @@
     }
     .GamePlayerNameBox{
         font-weight: bold;
-        width: calc(100%-50px);
+        width: 344px;
     }
     .GamePlayerScoreBox{
         width: 50px;
@@ -265,11 +265,13 @@ function updateGame(game){
     for(var playerIndex = 0; playerIndex < 4; playerIndex++){
         var playerNameBox = document.getElementById("GamePlayer"+playerIndex+"NameBox");
         var playerScoreBox = document.getElementById("GamePlayer"+playerIndex+"ScoreBox");
+        var playerInfoBox = document.getElementById("GamePlayer"+playerIndex+"InfoBox");
         if(playerIndex < game.players.length){
             playerNameBox.innerHTML = game.players[playerIndex];
-            playerScoreBox.innerHTML = game.scores[playerIndex];
+            playerScoreBox.innerHTML = game.scores[game.players[playerIndex]];
+            playerInfoBox.style.display = "inline-block";
             if(game.statuses[playerIndex] != -1){
-                playerNameBox.style.backgroundColor = game.teams[playerIndex].toLowerCase();
+                playerNameBox.style.backgroundColor = game.teams[game.players[playerIndex]].toLowerCase();
                 playerScoreBox.style.backgroundColor = "white";
             }
             else{
@@ -278,7 +280,6 @@ function updateGame(game){
             }
         }
         else{
-            var playerInfoBox = document.getElementById("GamePlayer"+playerIndex+"InfoBox");
             playerInfoBox.style.display = "none";
         }
     }
@@ -305,7 +306,8 @@ function updateGameText(phase, extra){
         gameHeader.innerHTML = "Welcome! Get ready for the first question...";
     }
     else if(phase == "Question"){
-        gameHeader.innerHTML = extra;
+        gameHeader.innerHTML = "Unscramble: "+extra;
+        //gameHeader.innerHTML = extra;
     }
     else if(phase == "QuestionCountdown"){
         gameHeader.innerHTML = "Get ready for the next question...";
