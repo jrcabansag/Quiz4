@@ -14,7 +14,7 @@ function loadWordDictionaries(){
         wordArray = data.split("\n");
     });
     fileReader.readFile("dictionary.txt", 'utf8', function(err, data) {
-        bigWordSet = new Set(data.split("\n"));
+        bigWordSet = new Set(data.split("\r\n"));
     });
 }
 
