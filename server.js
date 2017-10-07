@@ -121,9 +121,10 @@ function removePlayerFromGame(playerSocket){
 function changeGamePhase(gameCode, phase, timer, iteration, extra){
     if(gameCode in gameDictionary){
         var game = gameDictionary[gameCode];
-        if(iteration >= game.iteration){
+        if(iteration >= game.iteration && game.status != phase){
             game.status = phase;
             game.iteration = iteration+1;
+            gameDictionary[gameCode] = game;
             if(phase == "Question"){
                 game.wrongAnswerCount = 0;
                 if(game.gameType = "Word"){
@@ -134,6 +135,7 @@ function changeGamePhase(gameCode, phase, timer, iteration, extra){
                     }
                     io.in(gameCode).emit('updateGameText', phase, scrambledWord);
                 }
+                gameDictionary[gameCode] = game;
                 // game.questionIndex = Math.floor(Math.random()*game.questions.length);
                 // io.in(gameCode).emit('updateGameText', phase, game.questions[game.questionIndex]);
             }
@@ -205,24 +207,29 @@ function countSameNeighbors(board, x, y, dX, dY){
 }
 
 function checkAnswer(answer, game){
-    answer = answer.toLowerCase();
-    var gameWord = game.word
-    if(answer == gameWord){
-        return true;
-    }
-    else if(answer.length != gameWord.length){
-        return false;
-    }
-    var currAnswerWord = answer;
-    for(var x = 0; x < answer.length; x++){
-        var prevAnswerWord = currAnswerWord;
-        currAnswerWord = currAnswerWord.replace(answer[x], '');
-        if(prevAnswerWord == currAnswerWord){
+    if(game.phase == "Question"){
+        answer = answer.toLowerCase();
+        var gameWord = game.word
+        if(answer == gameWord){
+            return true;
+        }
+        else if(answer.length != gameWord.length){
             return false;
         }
-    }
-    if(currAnswerWord == "" && bigWordSet.has(answer)){
-        return true;
+        var currAnswerWord = answer;
+        for(var x = 0; x < answer.length; x++){
+            var prevAnswerWord = currAnswerWord;
+            currAnswerWord = currAnswerWord.replace(answer[x], '');
+            if(prevAnswerWord == currAnswerWord){
+                return false;
+            }
+        }
+        if(currAnswerWord == "" && bigWordSet.has(answer)){
+            return true;
+        }
+        else{
+            return false;
+        }
     }
     else{
         return false;
@@ -314,11 +321,10 @@ io.on('connection', function(socket){
                 if(game.status = "Question"){
                     if(game.gameType = "Word"){
                         var result = checkAnswer(answer, game);
-                        if(result){
+                        if(result && gameDictionary[gameCode] == game){
                             game.word = answer;
                             game.correctAnswerer = playersNameDictionary[socket.id];
                             game.scores[playersNameDictionary[socket.id]] += 1;
-                            gameDictionary[gameCode] = game;
                             changeGamePhase(gameCode, "CoinDropCountdown", 15, game.iteration, socket);
                         }
                         else{
