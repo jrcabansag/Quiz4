@@ -86,7 +86,7 @@ function createGame(gameCode){
             scoreDictionary[lobby.players[x]] = 0;
             teamDictionary[lobby.players[x]] = lobby.teams[x];
         }
-        gameDictionary[gameCode] = {gameCode: gameCode, players: lobby.players, playerCount: lobby.players.length, teams: teamDictionary, scores: scoreDictionary, statuses: new Array(lobby.players.length), status: "WelcomeCountdown", iteration: 0, board: board, correctAnswerer: "", wrongAnswerCount: 0, questions: ["What is 1+1?", "What is 11-1?"], answers: ["2", "10"], wordScramble: "", word: "", questionIndex: -1, coinCount: 0, gameType: "Word"};
+        gameDictionary[gameCode] = {gameCode: gameCode, players: lobby.players, playerCount: lobby.players.length, teams: teamDictionary, scores: scoreDictionary, statuses: new Array(lobby.players.length), status: "", iteration: 0, board: board, correctAnswerer: "", wrongAnswerCount: 0, questions: ["What is 1+1?", "What is 11-1?"], answers: ["2", "10"], wordScramble: "", word: "", questionIndex: -1, coinCount: 0, gameType: "Word"};
     }
     return gameDictionary[gameCode];
 }
@@ -207,29 +207,24 @@ function countSameNeighbors(board, x, y, dX, dY){
 }
 
 function checkAnswer(answer, game){
-    if(game.phase == "Question"){
-        answer = answer.toLowerCase();
-        var gameWord = game.word
-        if(answer == gameWord){
-            return true;
-        }
-        else if(answer.length != gameWord.length){
+    answer = answer.toLowerCase();
+    var gameWord = game.word
+    if(answer == gameWord){
+        return true;
+    }
+    else if(answer.length != gameWord.length){
+        return false;
+    }
+    var currAnswerWord = answer;
+    for(var x = 0; x < answer.length; x++){
+        var prevAnswerWord = currAnswerWord;
+        currAnswerWord = currAnswerWord.replace(answer[x], '');
+        if(prevAnswerWord == currAnswerWord){
             return false;
         }
-        var currAnswerWord = answer;
-        for(var x = 0; x < answer.length; x++){
-            var prevAnswerWord = currAnswerWord;
-            currAnswerWord = currAnswerWord.replace(answer[x], '');
-            if(prevAnswerWord == currAnswerWord){
-                return false;
-            }
-        }
-        if(currAnswerWord == "" && bigWordSet.has(answer)){
-            return true;
-        }
-        else{
-            return false;
-        }
+    }
+    if(currAnswerWord == "" && bigWordSet.has(answer)){
+        return true;
     }
     else{
         return false;
