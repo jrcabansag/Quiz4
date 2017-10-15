@@ -313,6 +313,7 @@ io.on('connection', function(socket){
             var gameCode = playersGameCodeDictionary[playerSocketId];
             if(gameCode in gameDictionary){
                 var game = gameDictionary[gameCode];
+                var gameIteration = game.iteration;
                 if(game.status = "Question"){
                     if(game.gameType = "Word"){
                         var result = checkAnswer(answer, game);
@@ -320,8 +321,8 @@ io.on('connection', function(socket){
                             gameDictionary[gameCode].status = "QuestionP"
                             game.word = answer;
                             game.correctAnswerer = playersNameDictionary[socket.id];
-                            game.scores[playersNameDictionary[socket.id]] += 1;
-                            changeGamePhase(gameCode, "CoinDropCountdown", 15, game.iteration, socket);
+                            //game.scores[playersNameDictionary[socket.id]] += 1;
+                            changeGamePhase(gameCode, "CoinDropCountdown", 15, gameIteration, socket);
                         }
                         else{
                             game.wrongAnswerCount += 1;
