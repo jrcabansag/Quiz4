@@ -314,11 +314,12 @@ io.on('connection', function(socket){
             var gameCode = playersGameCodeDictionary[playerSocketId];
             if(gameCode in gameDictionary){
                 var game = gameDictionary[gameCode];
+                var gameStatus = game.status;
                 var gameIteration = game.iteration;
-                if(game.status = "Question"){
+                if(gameStatus == "Question"){
                     if(game.gameType = "Word"){
                         var result = checkAnswer(answer, game);
-                        console.log(playersNameDictionary[socket.id]+" answered...checking with iteration "+gameIteration+" Status "+gameDictionary[gameCode].status)
+                        console.log(playersNameDictionary[socket.id]+" answered...checking with iteration "+gameIteration+" Game Status From Dict "+gameDictionary[gameCode].status+" Game Status From Variable "+gameStatus)
                         if(result && gameDictionary[gameCode] == game && gameDictionary[gameCode].status == "Question" && game.answerIteration == gameIteration){
                             game.status = "QuestionP"
                             game.word = answer;
@@ -328,7 +329,7 @@ io.on('connection', function(socket){
                             changeGamePhase(gameCode, "CoinDropCountdown", 15, gameIteration, socket);
                         }
                         else if(game.answerIteration != gameIteration){
-                            console.log("Denied answer from "+playersNameDictionary[socket.id]+"because of wrong iteration! (Answered too late)")
+                            console.log("Denied answer from "+playersNameDictionary[socket.id]+"because of wrong iteration! (Answered too late)"+" Game Status From Dict "+gameDictionary[gameCode].status+" Game Status From Variable "+gameStatus)
                         }
                         else if(result == false){
                             game.wrongAnswerCount += 1;
