@@ -359,6 +359,9 @@ io.on('connection', function(socket){
                     //     }
                     // }
                 }
+                else{
+                    console.log("Denied answer from "+playersNameDictionary[socket.id]+" because no longer question!")
+                }
             }
         }
     });
