@@ -320,11 +320,15 @@ io.on('connection', function(socket){
                         var result = checkAnswer(answer, game);
                         console.log(playersNameDictionary[socket.id]+" answered...checking with iteration "+gameIteration+" Status "+gameDictionary[gameCode].status)
                         if(result && gameDictionary[gameCode] == game && gameDictionary[gameCode].status == "Question" && game.answerIteration == gameIteration){
-                            gameDictionary[gameCode].status = "QuestionP"
+                            game.status = "QuestionP"
                             game.word = answer;
                             game.correctAnswerer = playersNameDictionary[socket.id];
-                            console.log(playersNameDictionary[socket.id]+" answered correctly with "+answer)
+                            game.scores[game.correctAnswerer] += 1;
+                            console.log(playersNameDictionary[socket.id]+" answered correctly with "+answer);
                             changeGamePhase(gameCode, "CoinDropCountdown", 15, gameIteration, socket);
+                        }
+                        else if(game.answerIteration != gameIteration){
+                            console.log("Denied answer from "+playersNameDictionary[socket.id]+"because of wrong iteration! (Answered too late)")
                         }
                         else if(result == false){
                             game.wrongAnswerCount += 1;
@@ -364,7 +368,6 @@ io.on('connection', function(socket){
             if(gameCode in gameDictionary){
                 var game = gameDictionary[gameCode];
                 if(game.status = "CoinDropCountdown" && playerName == game.correctAnswerer){
-                    game.scores[playerName] += 1;
                     var coinY = 0;
                     var board = game.board;
                     while(board[x][coinY] != "" && coinY < 6){
