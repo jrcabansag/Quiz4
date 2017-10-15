@@ -321,11 +321,13 @@ io.on('connection', function(socket){
                         var result = checkAnswer(answer, game);
                         console.log(playersNameDictionary[socket.id]+" answered...checking with iteration "+gameIteration+" Game Status From Dict "+gameDictionary[gameCode].status+" Game Status From Variable "+gameStatus)
                         if(result && gameDictionary[gameCode] == game && gameDictionary[gameCode].status == "Question" && game.answerIteration == gameIteration){
+                            gameDictionary[gameCode].status = "QuestionR"
                             game.status = "QuestionP"
                             game.word = answer;
                             game.correctAnswerer = playersNameDictionary[socket.id];
                             game.scores[game.correctAnswerer] += 1;
-                            console.log(playersNameDictionary[socket.id]+" answered correctly with "+answer);
+                            gameDictionary[gameCode] = game;
+                            console.log(playersNameDictionary[socket.id]+" answered correctly with "+answer+" Game Status From Dict "+gameDictionary[gameCode].status+" Game Status From Variable "+gameStatus);
                             changeGamePhase(gameCode, "CoinDropCountdown", 15, gameIteration, socket);
                         }
                         else if(game.answerIteration != gameIteration){
