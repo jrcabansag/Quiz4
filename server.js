@@ -316,7 +316,8 @@ io.on('connection', function(socket){
                 if(game.status = "Question"){
                     if(game.gameType = "Word"){
                         var result = checkAnswer(answer, game);
-                        if(result && gameDictionary[gameCode] == game){
+                        if(result && gameDictionary[gameCode] == game && gameDictionary[gameCode].status == "Question"){
+                            game.status = "QuestionP"
                             game.word = answer;
                             game.correctAnswerer = playersNameDictionary[socket.id];
                             game.scores[playersNameDictionary[socket.id]] += 1;
