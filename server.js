@@ -321,10 +321,9 @@ io.on('connection', function(socket){
                             gameDictionary[gameCode].status = "QuestionP"
                             game.word = answer;
                             game.correctAnswerer = playersNameDictionary[socket.id];
-                            //game.scores[playersNameDictionary[socket.id]] += 1;
                             changeGamePhase(gameCode, "CoinDropCountdown", 15, gameIteration, socket);
                         }
-                        else{
+                        else if(result == false){
                             game.wrongAnswerCount += 1;
                             if(game.wrongAnswerCount >= game.playerCount){
                                 changeGamePhase(gameCode, "NoCorrectCountdown", 7, game.iteration, "");
@@ -369,6 +368,7 @@ io.on('connection', function(socket){
                     }
                     if(coinY < 6){
                         board[x][coinY] = game.teams[playerName].toLowerCase();
+                        game.scores[playerName] += 1;
                         gameDictionary[gameCode].board = board;
                         gameDictionary[gameCode].coinCount += 1;
                         io.in(gameCode).emit('coinDrop', x, y, game.teams[playerName].toLowerCase());
