@@ -86,7 +86,7 @@ function createGame(gameCode){
             scoreDictionary[lobby.players[x]] = 0;
             teamDictionary[lobby.players[x]] = lobby.teams[x];
         }
-        gameDictionary[gameCode] = {gameCode: gameCode, players: lobby.players, playerCount: lobby.players.length, teams: teamDictionary, scores: scoreDictionary, statuses: new Array(lobby.players.length), status: "", iteration: 0, board: board, correctAnswerer: "", wrongAnswerCount: 0, questions: ["What is 1+1?", "What is 11-1?"], answers: ["2", "10"], wordScramble: "", word: "", questionIndex: -1, coinCount: 0, gameType: "Word"};
+        gameDictionary[gameCode] = {gameCode: gameCode, players: lobby.players, playerCount: lobby.players.length, teams: teamDictionary, scores: scoreDictionary, statuses: new Array(lobby.players.length), status: "", iteration: 0, board: board, correctAnswerer: "", wrongAnswerCount: 0, questions: ["What is 1+1?", "What is 11-1?"], answers: ["2", "10"], wordScramble: "", word: "", questionIndex: -1, coinCount: 0, gameType: "Word", answerIteration: 0};
     }
     return gameDictionary[gameCode];
 }
@@ -129,6 +129,7 @@ function changeGamePhase(gameCode, phase, timer, iteration, extra){
                 game.wrongAnswerCount = 0;
                 if(game.gameType = "Word"){
                     game.word = wordArray[Math.floor(Math.random()*wordArray.length)];
+                    game.answerIteration = game.iteration;
                     var scrambledWord = scrambleWord(game.word);
                     while(scrambledWord == game.word){
                         scrambledWord = scrambleWord(game.word);
@@ -318,7 +319,7 @@ io.on('connection', function(socket){
                     if(game.gameType = "Word"){
                         var result = checkAnswer(answer, game);
                         console.log(playersNameDictionary[socket.id]+" answered...checking with iteration "+gameIteration+" Status "+gameDictionary[gameCode].status)
-                        if(result && gameDictionary[gameCode] == game && gameDictionary[gameCode].status == "Question"){
+                        if(result && gameDictionary[gameCode] == game && gameDictionary[gameCode].status == "Question" && game.answerIteration == gameIteration){
                             gameDictionary[gameCode].status = "QuestionP"
                             game.word = answer;
                             game.correctAnswerer = playersNameDictionary[socket.id];
