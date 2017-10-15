@@ -317,10 +317,12 @@ io.on('connection', function(socket){
                 if(game.status = "Question"){
                     if(game.gameType = "Word"){
                         var result = checkAnswer(answer, game);
+                        console.log(playersNameDictionary[socket.id]+" answered...checking with iteration "+gameIteration+" Status "+gameDictionary[gameCode].status)
                         if(result && gameDictionary[gameCode] == game && gameDictionary[gameCode].status == "Question"){
                             gameDictionary[gameCode].status = "QuestionP"
                             game.word = answer;
                             game.correctAnswerer = playersNameDictionary[socket.id];
+                            console.log(playersNameDictionary[socket.id]+" answered correctly with "+answer)
                             changeGamePhase(gameCode, "CoinDropCountdown", 15, gameIteration, socket);
                         }
                         else if(result == false){
@@ -361,6 +363,7 @@ io.on('connection', function(socket){
             if(gameCode in gameDictionary){
                 var game = gameDictionary[gameCode];
                 if(game.status = "CoinDropCountdown" && playerName == game.correctAnswerer){
+                    game.scores[playerName] += 1;
                     var coinY = 0;
                     var board = game.board;
                     while(board[x][coinY] != "" && coinY < 6){
@@ -368,7 +371,6 @@ io.on('connection', function(socket){
                     }
                     if(coinY < 6){
                         board[x][coinY] = game.teams[playerName].toLowerCase();
-                        game.scores[playerName] += 1;
                         gameDictionary[gameCode].board = board;
                         gameDictionary[gameCode].coinCount += 1;
                         io.in(gameCode).emit('coinDrop', x, y, game.teams[playerName].toLowerCase());
