@@ -3,75 +3,189 @@
 <head>
     <title>Quiz4</title>
 </head>
+
+
+
 <style>
-    td{
-        border: 1px solid black;
-        text-align: center;
-        margin: auto;
-    }
-    select{
-        display: none;
-        text-align: center;
-    }
-    #WelcomeScreen{
-        display: block;
-    }
-    #CreateGameScreen{
-        display: none;
-    }
-    #JoinGameScreen{
-        display: none;
-    }
-    #LobbyScreen{
-        display: none;
-    }
-    .LobbyPlayerNameBox{
-        min-width: 150px;
-    }
-    .LobbyPlayerTeamBox{
-        min-width: 150px;
-    }
-    #GameScreen{
-        display: none;
-    }
-    #GameInfoScreen{
-        display:inline-block;
-        vertical-align: top;
-        width:394px;
-    }
-    #GameBoardScreen{
-        display:inline-block;
-        vertical-align: top;
-        border: 1px solid black;
-    }
-    .Slot{
-        min-width: 50px;
-        height: 50px;
-        border-radius: 50px;
-        background-color: white;
-    }
-    #GameTextScreen{
-        height: 230px;
-        border: 1px solid black;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-    }
-    #GameScoreboard{
-        width: 100%;
-    }
-    .GamePlayerNameBox{
-        font-weight: bold;
-        width: 344px;
-    }
-    .GamePlayerScoreBox{
-        width: 50px;
-        min-width: 50px;
-    }
+@font-face{
+    font-family: LatoBold;
+    src: url("LatoBold.ttf");
+}      
+body{
+    background-color: #3FD5FF;
+}
+h1, h2{
+    font-family: Gobold;
+    font-size: 80px;
+    color: #FFFFFF;
+    margin-bottom: 10px;
+}
+h2{
+    font-size: 20px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+b{
+    color: #FFF1B7;
+}
+input, button, td{
+    font-family: LatoBold;
+    font-size: 14px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    padding-left: 30px;
+    padding-right: 30px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    background-color: #FFFFFF;
+    border: none;
+    color: #3FD5FF;
+    letter-spacing: 1.5px;
+    margin-top: 7px;
+    margin-bottom: 10px;
+    margin-left: 4px;
+    margin-right: 4px;
+}
+input:focus, button:focus{
+    outline: none;
+}
+input{
+    border: 2px solid #FFFFFF;
+    background-color: #3FD5FF;
+    color: #FFFFFF;
+    min-width: 200px;
+    text-align: center;
+}
+::-webkit-input-placeholder{
+    color:  #FFFFFF;
+    text-align: center;
+}
+:-moz-placeholder{
+   color:   #FFFFFF;
+   text-align: center;
+}
+::-moz-placeholder{
+   color:   #FFFFFF;
+   text-align: center;
+}
+:-ms-input-placeholder{
+   color:    #FFFFFF;
+   text-align: center;
+}
+::-ms-input-placeholder{
+   color:   #FFFFFF;
+   text-align: center;
+}
+td{
+    text-align: center;
+    margin: auto;
+}
+.HeaderTD{
+    background-color: #3FD5FF;
+    color: #FFFFFF;
+}
+select{
+    font-family: LatoBold;
+    font-size: 14px;
+    display: none;
+    -webkit-appearance: none; 
+    -moz-appearance: none;
+    appearance: none;
+    width: 100px;
+    border: none;
+    border-radius: 16px;
+    text-align: center;
+    text-align-last: center;
+    outline: none;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    letter-spacing: 1px;
+    color: #FFFFFF;
+    text-transform: uppercase;
+}
+#WelcomeScreen{
+    display: block;
+}
+#CreateGameScreen{
+    display: none;
+}
+#JoinGameScreen{
+    display: none;
+}
+#LobbyScreen{
+    display: none;
+}
+.LobbyPlayerNameBox{
+    min-width: 200px;
+}
+.LobbyPlayerTeamBox{
+    min-width: 100px;
+    padding: 0px;
+}
+#GameScreen{
+    display: none;
+}
+#GameInfoScreen{
+    display:inline-block;
+    vertical-align: top;
+    width:394px;
+}
+#GameBoardScreen{
+    display:inline-block;
+    vertical-align: top;
+    border: none;
+    padding: 5px;
+    background-color: #FFFC95;
+    border-radius: 10px;
+    border-spacing: 6px;
+}
+.Slot{
+    width: 50px;
+    height: 50px;
+    border-radius: 50px;
+    background-color: #3FD5FF;
+    padding: 0px;
+}
+#GameTextScreen{
+    height: 230px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #FFFFFF;
+    padding: 30px;
+}
+#GameScoreboard{
+    width: 100%;
+}
+.GamePlayerNameBox{
+    font-weight: bold;
+    width: 344px;
+}
+.GamePlayerScoreBox{
+    width: 50px;
+    min-width: 50px;
+}
+#GameHeader{
+    color: #696969;
+    font-family: LatoBold;
+    letter-spacing: 1px;
+    font-size: 14px;
+}
+#GameTimer{
+    color: #696969;
+    font-family: LatoBold;
+}
+
 </style>
+
+
+
 <script src="/socket.io/socket.io.js"></script>
+
 <script>
+
 var socket;
 var welcomeScreen;
 var createGameScreen;
@@ -89,6 +203,8 @@ var gamePhase;
 var coinMatrix = new Array(7);
 var coinStatus = 1;
 
+
+
 function init(){
     welcomeScreen = document.getElementById('WelcomeScreen');
     createGameScreen = document.getElementById('CreateGameScreen');
@@ -101,6 +217,8 @@ function init(){
     initSocket();
     initGameSlots();
 }
+
+
 
 function initSocket(){
     socket = io();
@@ -149,6 +267,8 @@ function initSocket(){
     }
 }
 
+
+
 function initGameSlots(){
     for(var x = 0; x < 7; x++){
         gameSlotMatrix[x] = new Array(6);
@@ -157,6 +277,8 @@ function initGameSlots(){
         }
     }
 }
+
+
 
 function initCoinMatrix(){
     for(var x = 0; x < 7; x++){
@@ -167,11 +289,15 @@ function initCoinMatrix(){
     }
 }
 
+
+
 function changeScreen(newScreen){
     currentScreen.style.display = "none";
     newScreen.style.display = "block";
     currentScreen = newScreen;
 }
+
+
 
 function newGameRequest(){
     var nameBox = document.getElementById('NameBox');
@@ -183,6 +309,8 @@ function newGameRequest(){
         socket.emit('newGameRequest', name);
     }
 }
+
+
 
 function joinGameRequest(){
     var nameBox = document.getElementById('NameBoxJoin');
@@ -202,25 +330,34 @@ function joinGameRequest(){
     }
 }
 
+
+
 function enterLobbyScreen(lobby){
     changeScreen(lobbyScreen);
     updateLobby(lobby);
 }
 
+
+
 function updateLobby(lobby){
     var gameCodeLabel = document.getElementById("GameCodeLabel");
-    gameCodeLabel.innerHTML = "Game Code: "+lobby.gameCode;
+    gameCodeLabel.innerHTML = lobby.gameCode;
     for(var playerIndex = 0; playerIndex < 4; playerIndex++){
         var playerLabel = document.getElementById("Player"+playerIndex+"Label");
         var playerTeamSelect = document.getElementById("Player"+playerIndex+"Team");
+        var playerInfoBox = document.getElementById("LobbyPlayer"+playerIndex+"InfoBox");
         if(playerIndex < lobby.players.length){
+            playerInfoBox.style.display = "";
             playerLabel.innerHTML = lobby.players[playerIndex];
             playerTeamSelect.style.display = "inline-block";
             if(lobby.teams[playerIndex] != ""){
+                playerLabel.style.color = lobby.teams[playerIndex].toLowerCase();
                 playerTeamSelect.value = lobby.teams[playerIndex];
                 playerTeamSelect.style.backgroundColor = lobby.teams[playerIndex].toLowerCase();
+                playerTeamSelect.style.color = "white";
             }
             else{
+                playerLabel.style.color = "#696969";
                 playerTeamSelect.selectedIndex = 0;
                 playerTeamSelect.style.backgroundColor = "white"
             }
@@ -228,23 +365,32 @@ function updateLobby(lobby){
         else{
             playerLabel.innerHTML = "&nbsp;";
             playerTeamSelect.style.display = "none";
+            playerInfoBox.style.display = "none";
         }
     }
 }
+
+
 
 function changeTeamRequest(playerIndex){
     var playerTeam = document.getElementById("Player"+playerIndex+"Team");
     socket.emit('changeTeamRequest', playerIndex, playerTeam.value);
 }
 
+
+
 function leaveLobby(){
     socket.emit('leaveLobby');
     changeScreen(welcomeScreen);
 }
 
+
+
 function startGameRequest(){
     socket.emit('startGameRequest');
 }
+
+
 
 function enterGameScreen(game){
     gameHeader = document.getElementById("GameHeader");
@@ -254,12 +400,14 @@ function enterGameScreen(game){
     initCoinMatrix();
     for(var x = 0; x < 7; x++){
         for(var y = 0; y < 6; y++){
-            gameSlotMatrix[x][y].style.backgroundColor = "white";
+            gameSlotMatrix[x][y].style.backgroundColor = "#3FD5FF";
         }
     }
     changeScreen(gameScreen);
     updateGame(game);
 }
+
+
 
 function updateGame(game){
     for(var playerIndex = 0; playerIndex < 4; playerIndex++){
@@ -271,8 +419,10 @@ function updateGame(game){
             playerScoreBox.innerHTML = game.scores[game.players[playerIndex]];
             playerInfoBox.style.display = "inline-block";
             if(game.statuses[playerIndex] != -1){
-                playerNameBox.style.backgroundColor = game.teams[game.players[playerIndex]].toLowerCase();
-                playerScoreBox.style.backgroundColor = "white";
+                playerNameBox.style.color = game.teams[game.players[playerIndex]].toLowerCase();
+                playerNameBox.style.backgroundColor = "white";
+                playerScoreBox.style.backgroundColor = game.teams[game.players[playerIndex]].toLowerCase();
+                playerScoreBox.style.color = "white";
             }
             else{
                 playerNameBox.style.backgroundColor = "gray";
@@ -284,6 +434,8 @@ function updateGame(game){
         }
     }
 }
+
+
 
 function updateGameText(phase, extra){
     gamePhase = phase;
@@ -347,6 +499,8 @@ function updateGameText(phase, extra){
     }
 }
 
+
+
 function updateTimer(time, iteration){
     if(iteration >= gameIteration && time >= 0){
         gameIteration = iteration;
@@ -360,20 +514,28 @@ function updateTimer(time, iteration){
     }
 }
 
+
+
 function leaveGame(){
     socket.emit('leaveGame');
     var gameIteration = -1;
     changeScreen(welcomeScreen);
 }
 
+
+
 function hoverSlot(x, y){
 }
+
+
 
 function clickSlot(x, y){
     if(gamePhase == "CoinDrop"){
         socket.emit('placeCoin', x, y);
     }
 }
+
+
 
 function placeCoin(x, y, color){
     if(coinMatrix[x][5] == -1){
@@ -383,13 +545,15 @@ function placeCoin(x, y, color){
     }
 }
 
+
+
 function coinFall(x, y){
     if(y == 0 || coinMatrix[x][y-1] != -1){
         checkWinner(x, y);
     }
     else{
         gameSlotMatrix[x][y-1].style.backgroundColor = gameSlotMatrix[x][y].style.backgroundColor;
-        gameSlotMatrix[x][y].style.backgroundColor = "white";
+        gameSlotMatrix[x][y].style.backgroundColor = "#3FD5FF";
         coinMatrix[x][y-1] = coinMatrix[x][y];
         coinMatrix[x][y] = -1;
         setTimeout(function(){ coinFall(x, y-1); }, 50);
@@ -397,19 +561,23 @@ function coinFall(x, y){
     }
 }
 
+
+
 function checkWinner(x, y){
     var directionsArray = [{dX: 1, dY: 0}, {dX: 0, dY: 1}, {dX: 1, dY: -1}, {dX: 1, dY: 1}];
     for(var directionIndex = 0; directionIndex < directionsArray.length; directionIndex++){
         var currentDirection = directionsArray[directionIndex];
         var directionNeighborCount = countSameNeighbors(x, y, currentDirection.dX, currentDirection.dY);
         var compDirectionNeighborCount = countSameNeighbors(x, y, -currentDirection.dX, -currentDirection.dY);
-        if(directionNeighborCount + compDirectionNeighborCount >= 3){
-            gameSlotMatrix[x][y].style.backgroundColor = "yellow";
-            highlightNeighbors(x, y, currentDirection.dX, currentDirection.dY, directionNeighborCount);
-            highlightNeighbors(x, y, -currentDirection.dX, -currentDirection.dY, compDirectionNeighborCount);
-        }
+        // if(directionNeighborCount + compDirectionNeighborCount >= 3){
+        //     gameSlotMatrix[x][y].style.backgroundColor = "yellow";
+        //     highlightNeighbors(x, y, currentDirection.dX, currentDirection.dY, directionNeighborCount);
+        //     highlightNeighbors(x, y, -currentDirection.dX, -currentDirection.dY, compDirectionNeighborCount);
+        // }
     }
 }
+
+
 
 function countSameNeighbors(x, y, dX, dY){
     var coinValue = coinMatrix[x][y];
@@ -424,6 +592,8 @@ function countSameNeighbors(x, y, dX, dY){
     return neighborCount;
 }
 
+
+
 function highlightNeighbors(x, y, dX, dY, neighborCount){
     var neighborX = x+dX;
     var neighborY = y+dY;
@@ -435,18 +605,25 @@ function highlightNeighbors(x, y, dX, dY, neighborCount){
     }
 }
 
+
+
 function playAgainRequest(){
     alert("PLAY AGAIN!");
 }
+
+
 
 function endGameRequest(){
     alert("END GAME!");
 }
 
 </script>
+
+
+
 <body onload="init()">
     <center>
-    <h1>Quiz4</h1>
+    <h1>Quiz<b>4</b></h1>
     <div id="WelcomeScreen">
         <button type="button" onclick="changeScreen(createGameScreen)">New Game</button>
         <button type="button" onclick="changeScreen(joinGameScreen)">Join Game</button>
@@ -463,10 +640,10 @@ function endGameRequest(){
         <button type="button" onclick="changeScreen(welcomeScreen)">Back</button>
     </div>
     <div id="LobbyScreen">
-        <h2 id="GameCodeLabel">Game Code:</h2>
+        <h2>Game Code: <b id="GameCodeLabel"></b></h2>
         <table>
-            <tr><td class="LobbyPlayerNameBox"><strong>Player</strong></td><td class="LobbyPlayerTeamBox"><strong>Team</strong></td></tr>
-            <tr>
+            <tr><td class="LobbyPlayerNameBox HeaderTD"><strong>Player</strong></td><td class="LobbyPlayerTeamBox HeaderTD"><strong>Team</strong></td></tr>
+            <tr id="LobbyPlayer0InfoBox">
                 <td id="Player0Label" class="LobbyPlayerNameBox">&nbsp;</td>
                 <td class="LobbyPlayerTeamBox">
                     <select onchange="changeTeamRequest(0)" id="Player0Team">
@@ -481,7 +658,7 @@ function endGameRequest(){
                     </select>
                 </td>
             </tr>
-            <tr>
+            <tr id="LobbyPlayer1InfoBox">
                 <td id="Player1Label" class="LobbyPlayerNameBox">&nbsp;</td>
                 <td class="LobbyPlayerTeamBox">
                     <select onchange="changeTeamRequest(1)" id="Player1Team">
@@ -496,7 +673,7 @@ function endGameRequest(){
                     </select>
                 </td>
             </tr>
-            <tr>
+            <tr id="LobbyPlayer2InfoBox">
                 <td id="Player2Label" class="LobbyPlayerNameBox">&nbsp;</td>
                 <td class="LobbyPlayerTeamBox">
                     <select onchange="changeTeamRequest(2)" id="Player2Team">
@@ -511,7 +688,7 @@ function endGameRequest(){
                     </select>
                 </td>
             </tr>
-            <tr>
+            <tr id="LobbyPlayer3InfoBox">
                 <td id="Player3Label" class="LobbyPlayerNameBox">&nbsp;</td>
                 <td class="LobbyPlayerTeamBox">
                     <select onchange="changeTeamRequest(3)" id="Player3Team">
