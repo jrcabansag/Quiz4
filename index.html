@@ -7,6 +7,10 @@
 
 
 <style>
+@font-fact{
+    font-family: Gobold;
+    src: url("Gobold.otf");
+}
 @font-face{
     font-family: LatoBold;
     src: url("LatoBold.ttf");
@@ -14,7 +18,7 @@
 body{
     background-color: #3FD5FF;
 }
-h1, h2{
+h1, h2, h3{
     font-family: Gobold;
     font-size: 80px;
     color: #FFFFFF;
@@ -22,6 +26,12 @@ h1, h2{
 }
 h2{
     font-size: 20px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+h3{
+    font-family: LatoBold;
+    font-size: 14px;
     text-transform: uppercase;
     letter-spacing: 2px;
 }
@@ -189,8 +199,11 @@ select{
 var socket;
 var welcomeScreen;
 var createGameScreen;
+var createGameScreenError;
 var joinGameScreen;
+var joinGameScreenError;
 var lobbyScreen;
+var lobbyScreenError;
 var gameScreen;
 var currentScreen;
 var gameSlotMatrix = new Array(7);
@@ -210,9 +223,12 @@ function init(){
     createGameScreen = document.getElementById('CreateGameScreen');
     joinGameScreen = document.getElementById('JoinGameScreen');
     lobbyScreen = document.getElementById('LobbyScreen');
+    createGameScreenError = document.getElementById('CreateGameScreenError');
+    joinGameScreenError = document.getElementById('JoinGameScreenError');
+    lobbyScreenError = document.getElementById('LobbyScreenError');
     gameScreen = document.getElementById('GameScreen');
     answerBox = document.getElementById('AnswerBox');
-    playAgainButton = document.getElementById('PlayAgainButton');
+    //playAgainButton = document.getElementById('PlayAgainButton');
     currentScreen = welcomeScreen;
     initSocket();
     initGameSlots();
@@ -224,7 +240,8 @@ function initSocket(){
     socket = io();
     
     socket.on('errorMessage', function(message){
-        alert("Error: "+message);
+        lobbyScreenError.innerHTML = "Error: "+message;
+        //alert("Error: "+message);
     });
     
     socket.on('joinLobby', function(lobby){
@@ -295,6 +312,15 @@ function changeScreen(newScreen){
     currentScreen.style.display = "none";
     newScreen.style.display = "block";
     currentScreen = newScreen;
+    if(newScreen == createGameScreen){
+        createGameScreenError.innerHTML = "";
+    }
+    else if(newScreen == joinGameScreen){
+        joinGameScreenError.innerHTML = "";
+    }
+    else if(newScreen == lobbyScreen){
+        lobbyScreenError.innerHTML = "";
+    }
 }
 
 
@@ -303,7 +329,8 @@ function newGameRequest(){
     var nameBox = document.getElementById('NameBox');
     var name = nameBox.value;
     if(name.length == 0){
-        alert("Please enter a name!")
+        createGameScreenError.innerHTML = "Please enter a name!";
+        //alert("Please enter a name!")
     }
     else{
         socket.emit('newGameRequest', name);
@@ -316,13 +343,15 @@ function joinGameRequest(){
     var nameBox = document.getElementById('NameBoxJoin');
     var name = nameBox.value;
     if(name.length == 0){
-        alert("Please enter a name!")
+        joinGameScreenError.innerHTML = "Please enter a name!";
+        //alert("Please enter a name!")
     }
     else{
         var gameCodeBox = document.getElementById('GameCodeBox');
         var gameCode = gameCodeBox.value;
         if(gameCode.length != 6){
-            alert("Please enter a valid six letter game code!")
+            joinGameScreenError.innerHTML = "Please enter a valid six letter game code!";
+            //alert("Please enter a valid six letter game code!")
         }
         else{
             socket.emit('joinGameRequest', gameCode.toUpperCase(), name);
@@ -448,11 +477,11 @@ function updateGameText(phase, extra){
     }
     if(phase != "GameWon"){
         gameTimer.style.display = "inline-block";
-        playAgainButton.style.display = "none";
+        //playAgainButton.style.display = "none";
     }
     else{
         gameTimer.style.display = "none";
-        playAgainButton.style.display = "inline-block";
+        //playAgainButton.style.display = "inline-block";
     }
     if(phase == "WelcomeCountdown"){
         gameHeader.innerHTML = "Welcome! Get ready for the first question...";
@@ -629,11 +658,13 @@ function endGameRequest(){
         <button type="button" onclick="changeScreen(joinGameScreen)">Join Game</button>
     </div>
     <div id="CreateGameScreen">
+        <h3 id="CreateGameScreenError"></h3>
         <input type="text" id="NameBox" placeholder="Enter your name"><br>
         <button type="button" onclick="newGameRequest()">Create Game</button>
         <button type="button" onclick="changeScreen(welcomeScreen)">Back</button>
     </div>
     <div id="JoinGameScreen">
+        <h3 id="JoinGameScreenError"></h3>
         <input type="text" id="GameCodeBox" placeholder="Enter a game code"><br>
         <input type="text" id="NameBoxJoin" placeholder="Enter your name"><br>
         <button type="button" onclick="joinGameRequest()">Join Game</button>
@@ -641,6 +672,7 @@ function endGameRequest(){
     </div>
     <div id="LobbyScreen">
         <h2>Game Code: <b id="GameCodeLabel"></b></h2>
+        <h3 id="LobbyScreenError"></h3>
         <table>
             <tr><td class="LobbyPlayerNameBox HeaderTD"><strong>Player</strong></td><td class="LobbyPlayerTeamBox HeaderTD"><strong>Team</strong></td></tr>
             <tr id="LobbyPlayer0InfoBox">
@@ -650,7 +682,6 @@ function endGameRequest(){
                         <option disabled selected>Select a team</option>
                         <option>Red</option>
                         <option>Orange</option>
-                        <option>Yellow</option>
                         <option>Green</option>
                         <option>Blue</option>
                         <option>Purple</option>
@@ -665,7 +696,6 @@ function endGameRequest(){
                         <option disabled selected>Select a team</option>
                         <option>Red</option>
                         <option>Orange</option>
-                        <option>Yellow</option>
                         <option>Green</option>
                         <option>Blue</option>
                         <option>Purple</option>
@@ -680,7 +710,6 @@ function endGameRequest(){
                         <option disabled selected>Select a team</option>
                         <option>Red</option>
                         <option>Orange</option>
-                        <option>Yellow</option>
                         <option>Green</option>
                         <option>Blue</option>
                         <option>Purple</option>
@@ -695,7 +724,6 @@ function endGameRequest(){
                         <option disabled selected>Select a team</option>
                         <option>Red</option>
                         <option>Orange</option>
-                        <option>Yellow</option>
                         <option>Green</option>
                         <option>Blue</option>
                         <option>Purple</option>
@@ -713,7 +741,7 @@ function endGameRequest(){
                 <h2 id="GameHeader">Welcome!</h2>
                 <input type="text" id="AnswerBox" placeholder="Enter your answer">
                 <h2 id="GameTimer">0:00</h2>
-                <button type="button" id="PlayAgainButton" onclick="playAgainRequest()">Play Again</button>
+                <!--<button type="button" id="PlayAgainButton" onclick="playAgainRequest()">Play Again</button>-->
             </div>
             <table id="GameScoreboard">
             <tr id="GamePlayer0InfoBox"><td id="GamePlayer0NameBox" class="GamePlayerNameBox">Player 0</td><td id="GamePlayer0ScoreBox" class="GamePlayerScoreBox">0</td><tr>
@@ -779,7 +807,7 @@ function endGameRequest(){
             </tr>
         </table><br>
         <button type="button" onclick="leaveGame()">Leave Game</button>
-        <button type="button" onclick="endGameRequest()">End Game</button>
+        <!--<button type="button" onclick="endGameRequest()">End Game</button>-->
     </div>
     </center>
 </body>
