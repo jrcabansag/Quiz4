@@ -29,10 +29,16 @@ function generateGameCode(){
 }
 
 function createLobby(gameCode){
-    lobbyDictionary[gameCode] = {gameCode: gameCode, players: [], teams: []};
+    lobbyDictionary[gameCode] = {
+        screen: "Lobby",
+        gameCode: gameCode, 
+        players: [], 
+        teams: []
+    };
 }
 
 function addPlayerToLobby(playerSocket, playerName, gameCode){
+    playerName = playerName.toLowerCase()
     var lobby = lobbyDictionary[gameCode];
     while(lobby.players.indexOf(playerName) != -1){
         playerName+="2";
@@ -41,10 +47,10 @@ function addPlayerToLobby(playerSocket, playerName, gameCode){
     lobby.teams.push("");
     lobbyDictionary[gameCode] = lobby;
     playerSocket.join(gameCode);
-    playerSocket.emit('joinLobby', lobby);
+    playerSocket.emit('updateState', lobby);
     playersGameCodeDictionary[playerSocket.id] = gameCode;
     playersNameDictionary[playerSocket.id] = playerName;
-    io.in(gameCode).emit('updateLobby', lobby);
+    io.in(gameCode).emit('updateState', lobby);
 }
 
 function removePlayerFromLobby(playerSocket){
@@ -61,7 +67,7 @@ function removePlayerFromLobby(playerSocket){
             lobby.players.splice(lobby.players.indexOf(name), 1);
             if(lobby.players.length > 0){
                 lobbyDictionary[gameCode] = lobby;
-                io.in(gameCode).emit('updateLobby', lobby);
+                io.in(gameCode).emit('updateState', lobby);
             }
             else{
                 console.log("No more players in lobby "+gameCode+"! It is now deleted");
@@ -88,7 +94,7 @@ function createGame(gameCode){
             scoreDictionary[lobby.players[x]] = 0;
             teamDictionary[lobby.players[x]] = lobby.teams[x];
         }
-        gameDictionary[gameCode] = {gameCode: gameCode, players: lobby.players, playerCount: lobby.players.length, teams: teamDictionary, scores: scoreDictionary, statuses: new Array(lobby.players.length), status: "", iteration: 0, board: board, correctAnswerer: "", wrongAnswerCount: 0, questions: ["What is 1+1?", "What is 11-1?"], answers: ["2", "10"], wordScramble: "", word: "", questionIndex: -1, coinCount: 0, gameType: "Word", answerIteration: 0};
+        gameDictionary[gameCode] = {screen: "Game", gameCode: gameCode, players: lobby.players, playerCount: lobby.players.length, teams: teamDictionary, scores: scoreDictionary, statuses: new Array(lobby.players.length), status: "", iteration: 0, board: board, correctAnswerer: "", wrongAnswerCount: 0, questions: ["What is 1+1?", "What is 11-1?"], answers: ["2", "10"], wordScramble: "", word: "", questionIndex: -1, coinCount: 0, gameType: "Word", answerIteration: 0};
     }
     return gameDictionary[gameCode];
 }
@@ -139,23 +145,18 @@ function changeGamePhase(gameCode, phase, timer, iteration, extra){
                     io.in(gameCode).emit('updateGameText', phase, scrambledWord);
                 }
                 gameDictionary[gameCode] = game;
-                // game.questionIndex = Math.floor(Math.random()*game.questions.length);
-                // io.in(gameCode).emit('updateGameText', phase, game.questions[game.questionIndex]);
             }
             else if(phase == "CoinDropCountdown"){
                 if(game.gameType = "Word"){
                     extra.broadcast.to(gameCode).emit('updateGameText', phase, {correctAnswerer: game.correctAnswerer, answer: game.word});
                     extra.emit('updateGameText', "CoinDrop", game.word);
                 }
-                // extra.broadcast.to(gameCode).emit('updateGameText', phase, {correctAnswerer: game.correctAnswerer, answer: game.answers[game.questionIndex]});
-                // extra.emit('updateGameText', "CoinDrop", game.answers[game.questionIndex]);
                 io.in(gameCode).emit('updateGame', game);
             }
             else if(phase == "NoCorrectCountdown"){
                 if(game.gameType = "Word"){
                     io.in(gameCode).emit('updateGameText', phase, game.word);
                 }
-                //io.in(gameCode).emit('updateGameText', phase, game.answers[game.questionIndex]);
             }
             else if(phase == "GameWon"){
                 io.in(gameCode).emit('updateGameText', phase, extra);
@@ -278,9 +279,11 @@ io.on('connection', function(socket){
         var playerSocketId = socket.id;
         if(playerSocketId in playersGameCodeDictionary){
             var gameCode = playersGameCodeDictionary[playerSocketId];
-            var lobby = lobbyDictionary[gameCode];
-            lobby.teams[playerIndex] = team;
-            io.in(gameCode).emit('updateLobby', lobby);
+            if(gameCode in lobbyDictionary){
+                var lobby = lobbyDictionary[gameCode];
+                lobby.teams[playerIndex] = team;
+                io.in(gameCode).emit('updateState', lobby);
+            }
         }
     });
     
@@ -302,7 +305,7 @@ io.on('connection', function(socket){
                 }
                 if(canStartGame){
                     var game = createGame(gameCode);
-                    io.in(gameCode).emit('joinGame', game);
+                    io.in(gameCode).emit('updateState', game);
                     changeGamePhase(gameCode, "WelcomeCountdown", 7, game.iteration, "");
                 }
                 else{
@@ -347,21 +350,6 @@ io.on('connection', function(socket){
                             }
                         }
                     }
-                    // if(answer == game.answers[game.questionIndex]){
-                    //     game.correctAnswerer = playersNameDictionary[socket.id];
-                    //     game.scores[playersNameDictionary[socket.id]] += 1;
-                    //     gameDictionary[gameCode] = game;
-                    //     changeGamePhase(gameCode, "CoinDropCountdown", 15, game.iteration, socket);
-                    // }
-                    // else{
-                    //     game.wrongAnswerCount += 1;
-                    //     if(game.wrongAnswerCount >= game.playerCount){
-                    //         changeGamePhase(gameCode, "NoCorrectCountdown", 7, game.iteration, "");
-                    //     }
-                    //     else{
-                    //         socket.emit('wrongAnswer', game.answers[game.questionIndex]);
-                    //     }
-                    // }
                 }
                 else{
                     console.log("Denied answer from "+playersNameDictionary[socket.id]+" because no longer question!")
