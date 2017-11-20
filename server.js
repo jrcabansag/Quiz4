@@ -116,7 +116,7 @@ function removePlayerFromGame(playerSocket){
             game.playerCount -= 1;
             if(game.playerCount > 0){
                 gameDictionary[gameCode] = game;
-                io.in(gameCode).emit('updateGame', game);
+                io.in(gameCode).emit('updatePlayers', game.players);
             }
             else{
                 console.log("No more players in game "+gameCode+"! It is now deleted");
@@ -142,30 +142,30 @@ function changeGamePhase(gameCode, phase, timer, iteration, extra){
                     while(scrambledWord == game.word){
                         scrambledWord = scrambleWord(game.word);
                     }
-                    io.in(gameCode).emit('updateGameText', phase, scrambledWord);
+                    io.in(gameCode).emit('updateQuestion', scrambledWord);
                 }
                 gameDictionary[gameCode] = game;
             }
             else if(phase == "CoinDropCountdown"){
                 if(game.gameType = "Word"){
-                    extra.broadcast.to(gameCode).emit('updateGameText', phase, {correctAnswerer: game.correctAnswerer, answer: game.word});
-                    extra.emit('updateGameText', "CoinDrop", game.word);
+                    extra.broadcast.to(gameCode).emit('correctAnswer', game.correctAnswerer, game.word);
+                    extra.emit('coinDrop', game.word);
                 }
-                io.in(gameCode).emit('updateGame', game);
+                io.in(gameCode).emit('updateScores', game.scores);
             }
             else if(phase == "NoCorrectCountdown"){
                 if(game.gameType = "Word"){
-                    io.in(gameCode).emit('updateGameText', phase, game.word);
+                    io.in(gameCode).emit('noCorrect', game.word);
                 }
             }
             else if(phase == "GameWon"){
-                io.in(gameCode).emit('updateGameText', phase, extra);
+                io.in(gameCode).emit('gameWon', extra);
             }
             else{
                 io.in(gameCode).emit('updateGameText', phase, "");
             }
             gameDictionary[gameCode] = game;
-            io.in(gameCode).emit('changeTimer',timer, gameDictionary[gameCode].iteration);
+            io.in(gameCode).emit('changeTimer', timer, iteration);
             setTimeout(function(){
                 if(phase == "WelcomeCountdown" || phase == "NoCorrectCountdown" || phase == "QuestionCountdown"){
                     changeGamePhase(gameCode, "Question", 59, iteration+1, "");
@@ -375,7 +375,7 @@ io.on('connection', function(socket){
                         board[x][coinY] = game.teams[playerName].toLowerCase();
                         gameDictionary[gameCode].board = board;
                         gameDictionary[gameCode].coinCount += 1;
-                        io.in(gameCode).emit('coinDrop', x, y, game.teams[playerName].toLowerCase());
+                        io.in(gameCode).emit('coinDropped', x, y, game.teams[playerName].toLowerCase());
                         if(checkWinner(board, x, coinY)){
                             var winnerArray = [];
                             for(var playerIndex = 0; playerIndex < game.players.length; playerIndex++){
